@@ -63,7 +63,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col justify-between">
-      
+
       {/* Header / Navbar Público */}
       <header className="border-b border-gray-800/80 bg-gray-900/60 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
         <div className="flex items-center space-x-3">
@@ -91,7 +91,7 @@ export default function HomePage() {
 
       {/* Hero Section + Catálogo */}
       <main className="max-w-7xl mx-auto w-full px-6 py-12 space-y-12 flex-1">
-        
+
         {/* Banner principal */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
           <span className="inline-block px-3 py-1 text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full">
@@ -142,16 +142,16 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Ahora (Solución fija) */}
       <footer className="border-t border-gray-800/80 bg-gray-900/40 text-center py-6 text-xs text-gray-500">
-        © {new Date().getFullYear()} StreamStore SaaS. Todos los derechos reservados.
+        © 2026 StreamStore SaaS. Todos los derechos reservados.
       </footer>
 
       {/* Modal Requerir Cuenta / Iniciar Sesión */}
       {modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
           <div className="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-2xl p-6 space-y-6 shadow-2xl relative text-center">
-            
+
             {/* Botón cerrar X */}
             <button
               onClick={() => setModalAbierto(false)}
