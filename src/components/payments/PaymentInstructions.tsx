@@ -2,6 +2,14 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { ZoomIn } from 'lucide-react';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export type MetodoPago = 'YAPE' | 'PLIN' | 'BCP' | 'INTERBANK' | 'INTERNACIONAL';
 
@@ -28,6 +36,7 @@ export function PaymentInstructions({
   const [pais, setPais] = useState<'MX' | 'CO' | 'EC'>('MX');
   const [copiado, setCopiado] = useState('');
   const [errorCopia, setErrorCopia] = useState('');
+  const [qrAmpliado, setQrAmpliado] = useState<'YAPE' | 'PLIN' | null>(null);
 
   const copiar = async (label: string, value: string) => {
     try {
@@ -84,9 +93,17 @@ export function PaymentInstructions({
 
       {metodo === 'YAPE' && (
         <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
-          <div className="rounded-lg bg-white p-2">
+          <button
+            type="button"
+            onClick={() => setQrAmpliado('YAPE')}
+            aria-label="Ampliar código QR de Yape"
+            className="group relative overflow-hidden rounded-lg bg-white p-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+          >
             <Image src="/payments/yape-qr.png" alt="Código QR de Yape de Jose Ruben Vitate Quillay" width={400} height={280} className="h-auto w-full" />
-          </div>
+            <span className="absolute inset-2 flex items-center justify-center gap-1 rounded-md bg-slate-950/60 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+              <ZoomIn size={16} /> Ampliar QR
+            </span>
+          </button>
           <div className="space-y-3">
             <p className="text-sm text-slate-300">Titular: <strong className="text-white">{titular}</strong></p>
             {datoCopiable('Número de celular Yape', '962266922')}
@@ -96,9 +113,17 @@ export function PaymentInstructions({
 
       {metodo === 'PLIN' && (
         <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
-          <div className="rounded-lg bg-white p-2">
+          <button
+            type="button"
+            onClick={() => setQrAmpliado('PLIN')}
+            aria-label="Ampliar código QR de Plin"
+            className="group relative overflow-hidden rounded-lg bg-white p-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+          >
             <Image src="/payments/plin-qr.png" alt="Código QR de Plin de Jose Vitate" width={768} height={1024} className="h-auto w-full" />
-          </div>
+            <span className="absolute inset-2 flex items-center justify-center gap-1 rounded-md bg-slate-950/60 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+              <ZoomIn size={16} /> Ampliar QR
+            </span>
+          </button>
           <div className="space-y-3">
             <p className="text-sm text-slate-300">Titular: <strong className="text-white">JOSE VITATE</strong></p>
             {datoCopiable('Número de celular Plin', '962266922')}
@@ -164,6 +189,34 @@ export function PaymentInstructions({
         </div>
       )}
       {errorCopia && <p role="status" className="text-xs text-amber-300">{errorCopia}</p>}
+      <Dialog open={qrAmpliado !== null} onOpenChange={(open) => { if (!open) setQrAmpliado(null); }}>
+        {qrAmpliado && (
+          <DialogContent showCloseButton={false} className="max-w-md border border-cyan-900 bg-slate-900 p-6 text-center">
+            <DialogTitle className="text-lg font-bold text-white">
+              Código QR {qrAmpliado === 'YAPE' ? 'Yape' : 'Plin'} Oficial
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Titular: {qrAmpliado === 'YAPE' ? titular : 'JOSE VITATE'}
+            </DialogDescription>
+            <div className="mx-auto flex max-h-[60vh] w-full items-center justify-center overflow-hidden rounded-xl bg-white p-3">
+              <Image
+                src={qrAmpliado === 'YAPE' ? '/payments/yape-qr.png' : '/payments/plin-qr.png'}
+                alt={`Código QR ampliado de ${qrAmpliado === 'YAPE' ? 'Yape' : 'Plin'}`}
+                width={qrAmpliado === 'YAPE' ? 400 : 768}
+                height={qrAmpliado === 'YAPE' ? 280 : 1024}
+                className="h-auto max-h-[55vh] w-auto max-w-full object-contain"
+                sizes="(max-width: 448px) 90vw, 400px"
+              />
+            </div>
+            <p className="font-mono font-bold tracking-widest text-cyan-300">
+              {qrAmpliado === 'YAPE' ? 'Yapear al: ' : 'Plinear al: '}962 266 922
+            </p>
+            <DialogClose className="w-full rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
+              Cerrar
+            </DialogClose>
+          </DialogContent>
+        )}
+      </Dialog>
     </section>
   );
 }

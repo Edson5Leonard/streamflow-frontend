@@ -32,6 +32,10 @@ export default function SoporteCompradorPage() {
     e.preventDefault();
     setError('');
     setMensaje('');
+    if (!ventaId) {
+      setError('Selecciona la cuenta que presenta la falla.');
+      return;
+    }
     if (!evidencia) {
       setError('Adjunta una captura de la falla.');
       return;
@@ -44,7 +48,7 @@ export default function SoporteCompradorPage() {
         method: 'POST',
         body: datosEvidencia,
       });
-      await fetchApi('/reclamos/auto-garantia', {
+      await fetchApi('/reclamos', {
         method: 'POST',
         body: JSON.stringify({
           ventaId,
@@ -53,7 +57,7 @@ export default function SoporteCompradorPage() {
           comprobanteFalloUrl: url,
         }),
       });
-      setMensaje('Falla validada y cuenta de garantía asignada. Tus credenciales ya están disponibles en Mis compras y se enviaron a tu WhatsApp.');
+      setMensaje('Tu reporte fue enviado al distribuidor para revisión. No necesitas tener una cuenta de reemplazo disponible para reportar la falla.');
       setDetalles('');
       setEvidencia(null);
     } catch (err) {
@@ -67,7 +71,7 @@ export default function SoporteCompradorPage() {
     <div className="max-w-xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-white">Soporte y Garantías</h1>
-        <p className="text-gray-400 text-sm mt-1">Adjunta la evidencia de una compra afectada para solicitar un reemplazo inmediato de garantía.</p>
+        <p className="text-gray-400 text-sm mt-1">Selecciona la cuenta afectada y adjunta evidencia. El distribuidor revisará el reporte y lo enviará al administrador para su resolución.</p>
       </div>
 
       {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
@@ -81,8 +85,10 @@ export default function SoporteCompradorPage() {
             value={ventaId}
             onChange={(e) => setVentaId(e.target.value)}
             required
+            disabled={compras.length === 0 || enviando}
             className="w-full p-3 bg-gray-950 border border-gray-800 rounded-xl text-white text-sm"
           >
+            {compras.length === 0 && <option value="">No hay compras disponibles</option>}
             {compras.map((compra) => (
               <option key={compra.id} value={compra.id}>{compra.servicio} ({compra.correo})</option>
             ))}
@@ -128,10 +134,10 @@ export default function SoporteCompradorPage() {
 
         <button
           type="submit"
-          disabled={enviando || compras.length === 0}
+          disabled={enviando || compras.length === 0 || !ventaId}
           className="w-full py-3.5 bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-xl text-sm transition shadow-lg shadow-yellow-600/20"
         >
-          {enviando ? 'Validando y asignando garantía...' : 'Reportar falla y reemplazar cuenta'}
+          {enviando ? 'Enviando reporte...' : 'Enviar reporte de falla'}
         </button>
       </form>
     </div>

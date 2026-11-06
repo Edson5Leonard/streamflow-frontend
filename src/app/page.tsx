@@ -51,6 +51,7 @@ interface Seguimiento {
   estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
   motivoRechazo: string | null;
   garantiaUsada: boolean;
+  reclamoPendiente: boolean;
   compra: Compra | null;
 }
 
@@ -319,6 +320,13 @@ export default function HomePage() {
     formData.append('archivo', evidenciaFallo);
     try {
       await fetchApi('/reclamos/publica', { method: 'POST', body: formData });
+      setSeguimientos((actuales) => ({
+        ...actuales,
+        [reclamoPedido.id]: {
+          ...actuales[reclamoPedido.id],
+          reclamoPendiente: true,
+        },
+      }));
       setMensajeReclamo(`El reclamo de ${reclamoPedido.nombreServicio} se registró correctamente. Revisa tu WhatsApp para la respuesta.`);
       setReclamoPedido(null);
       setMotivoFallo('');
@@ -636,7 +644,10 @@ export default function HomePage() {
                         fecha={estado.compra.fechaVenta}
                       />
                     )}
-                    {estado?.estado === 'APROBADO' && estado.compra && !estado.garantiaUsada && (
+                    {estado?.estado === 'APROBADO' && estado.reclamoPendiente && (
+                      <p className="text-sm text-amber-300">Tu reporte de falla está pendiente de revisión por el distribuidor.</p>
+                    )}
+                    {estado?.estado === 'APROBADO' && estado.compra && !estado.garantiaUsada && !estado.reclamoPendiente && (
                       <button
                         type="button"
                         onClick={() => { setReclamoPedido(pedido); setError(''); }}
@@ -658,11 +669,11 @@ export default function HomePage() {
           <div className="text-center space-y-2">
             <span className="text-purple-400 font-extrabold text-xs uppercase tracking-widest">Pasarela de Pagos Segura</span>
             <h2 className="text-3xl font-black text-white">Métodos de Pago Oficiales</h2>
-            <p className="text-gray-400 text-xs md:text-sm">Elige Yape, BCP, Interbank o transferencia internacional. El distribuidor valida el comprobante antes de activar el pedido.</p>
+            <p className="text-gray-400 text-xs md:text-sm">Elige Yape, Plin, BCP, Interbank o transferencia internacional. El distribuidor valida el comprobante antes de activar el pedido.</p>
           </div>
 
           <div className="mx-auto max-w-3xl">
-            <PaymentInstructions metodo={metodoPago} onMetodoChange={setMetodoPago} mostrarPlin={false} />
+            <PaymentInstructions metodo={metodoPago} onMetodoChange={setMetodoPago} />
           </div>
           <div className="flex flex-wrap justify-center gap-3">
             <button
@@ -778,7 +789,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <PaymentInstructions metodo={metodoPago} onMetodoChange={setMetodoPago} mostrarPlin={false} />
+                <PaymentInstructions metodo={metodoPago} onMetodoChange={setMetodoPago} />
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="space-y-1.5 text-sm text-slate-300">
@@ -830,7 +841,7 @@ export default function HomePage() {
                 </select>
               </label>
               <label className="block space-y-1.5 text-sm text-slate-300">Descripción
-                <textarea required minLength={5} maxLength={1000} value={motivoFallo} onChange={(event) => setMotivoFallo(event.target.value)} className="min-h-24 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-white" placeholder="Describe qué ocurrió" />
+                <textarea required minLength={5} maxLength={500} value={motivoFallo} onChange={(event) => setMotivoFallo(event.target.value)} className="min-h-24 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-white" placeholder="Describe qué ocurrió" />
               </label>
               <label className="block space-y-1.5 text-sm text-slate-300">Captura del problema
                 <input required type="file" accept="image/*,application/pdf" onChange={(event) => setEvidenciaFallo(event.target.files?.[0] ?? null)} className="block w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-700 file:px-3 file:py-2 file:text-white" />

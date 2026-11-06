@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   description: string;
   confirmLabel: string;
   loading?: boolean;
+  confirmDisabled?: boolean;
   destructive?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -21,6 +22,7 @@ export function ConfirmModal({
   description,
   confirmLabel,
   loading = false,
+  confirmDisabled = false,
   destructive = false,
   onCancel,
   onConfirm,
@@ -57,7 +59,7 @@ export function ConfirmModal({
           </button>
           <button
             type="button"
-            disabled={loading}
+            disabled={loading || confirmDisabled}
             onClick={onConfirm}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${
               destructive ? 'bg-red-700 hover:bg-red-600' : 'bg-emerald-700 hover:bg-emerald-600'

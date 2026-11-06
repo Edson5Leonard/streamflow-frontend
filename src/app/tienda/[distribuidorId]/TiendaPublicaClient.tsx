@@ -47,6 +47,7 @@ interface Seguimiento {
   estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
   motivoRechazo: string | null;
   garantiaUsada: boolean;
+  reclamoPendiente: boolean;
   compra: Compra | null;
 }
 
@@ -74,6 +75,7 @@ export default function TiendaPublicaClient({
   const [evidenciaFallo, setEvidenciaFallo] = useState<File | null>(null);
   const [enviandoGarantia, setEnviandoGarantia] = useState(false);
   const [mensajeGarantia, setMensajeGarantia] = useState('');
+  const [reportesEnviados, setReportesEnviados] = useState<Record<string, boolean>>({});
   const [cargando, setCargando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
@@ -245,7 +247,7 @@ export default function TiendaPublicaClient({
   const reportarFalla = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!pedido || !evidenciaFallo) {
-      setError('Adjunta una captura para solicitar el reemplazo.');
+      setError('Adjunta una captura para reportar la falla.');
       return;
     }
     setEnviandoGarantia(true);
@@ -258,16 +260,20 @@ export default function TiendaPublicaClient({
     formData.append('motivo', motivoFallo);
     formData.append('archivo', evidenciaFallo);
     try {
-      await fetchApi('/reclamos/auto-garantia/publica', { method: 'POST', body: formData });
-      const estadoActualizado = await fetchApi<Seguimiento>(
-        `/pagos/publico/${encodeURIComponent(pedido.id)}?token=${encodeURIComponent(pedido.tokenPublico)}`,
-      );
-      setSeguimientos((actuales) => ({ ...actuales, [pedido.id]: estadoActualizado }));
-      setMensajeGarantia('Reemplazo asignado. Las nuevas credenciales ya están disponibles y fueron enviadas a tu WhatsApp.');
+      await fetchApi('/reclamos/publica', { method: 'POST', body: formData });
+      setReportesEnviados((actuales) => ({ ...actuales, [pedido.id]: true }));
+      setSeguimientos((actuales) => ({
+        ...actuales,
+        [pedido.id]: {
+          ...actuales[pedido.id],
+          reclamoPendiente: true,
+        },
+      }));
+      setMensajeGarantia('Tu reporte de falla fue enviado al distribuidor para revisión. Te avisarán cuando lo resuelvan.');
       setMotivoFallo('');
       setEvidenciaFallo(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo asignar el reemplazo de garantía.');
+      setError(err instanceof Error ? err.message : 'No se pudo registrar el reporte de garantía.');
     } finally {
       setEnviandoGarantia(false);
     }
@@ -326,7 +332,7 @@ export default function TiendaPublicaClient({
         <header className="border-b border-slate-800 pb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">StreamFlow · Tienda</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{nombreTienda || 'Servicios de streaming'}</h1>
-          <p className="mt-2 text-sm text-slate-400">Elige tus servicios, revisa el total y paga con Yape, BCP, Interbank o transferencia internacional.</p>
+          <p className="mt-2 text-sm text-slate-400">Elige tus servicios, revisa el total y paga con Yape, Plin, BCP, Interbank o transferencia internacional.</p>
         </header>
 
         {error && !pasarelaAbierta && <p role="alert" className="rounded-lg border border-red-900/70 bg-red-950/30 p-3 text-sm text-red-300">{error}</p>}
@@ -419,12 +425,18 @@ export default function TiendaPublicaClient({
             })}
             {pedidos.some((pedidoActual) => seguimientos[pedidoActual.id]?.estado === 'PENDIENTE') && <p className="text-sm text-slate-400">Mantén esta página abierta. Se actualizará al aprobar el pago.</p>}
             {mensajeGarantia && <p role="status" className="rounded-lg border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{mensajeGarantia}</p>}
-            {seguimiento?.estado === 'APROBADO' && seguimiento.compra && seguimiento.garantiaUsada && (
+            {seguimiento?.estado === 'APROBADO' && seguimiento.compra && seguimiento.garantiaUsada && !reportesEnviados[pedido.id] && (
               <p className="text-sm text-slate-400">Esta compra ya recibió un reemplazo de garantía.</p>
             )}
-            {seguimiento?.estado === 'APROBADO' && seguimiento.compra && !seguimiento.garantiaUsada && (
+            {seguimiento?.estado === 'APROBADO' && seguimiento.reclamoPendiente && !reportesEnviados[pedido.id] && (
+              <p className="text-sm text-amber-300">Tu reporte de falla está pendiente de revisión por el distribuidor.</p>
+            )}
+            {seguimiento?.estado === 'APROBADO' && seguimiento.compra && reportesEnviados[pedido.id] && (
+              <p className="text-sm text-emerald-300">Tu reporte ya está en revisión.</p>
+            )}
+            {seguimiento?.estado === 'APROBADO' && seguimiento.compra && !seguimiento.garantiaUsada && !seguimiento.reclamoPendiente && !reportesEnviados[pedido.id] && (
               <details className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">
-                <summary className="cursor-pointer text-sm font-medium text-slate-200">Reportar una falla y solicitar garantía</summary>
+                <summary className="cursor-pointer text-sm font-medium text-slate-200">Reportar una falla</summary>
                 <form onSubmit={reportarFalla} className="mt-4 space-y-3">
                   <label className="block space-y-1.5 text-sm text-slate-300">Tipo de falla
                     <select value={categoriaFallo} onChange={(event) => setCategoriaFallo(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white">
@@ -441,7 +453,7 @@ export default function TiendaPublicaClient({
                     <input required type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(event) => setEvidenciaFallo(event.target.files?.[0] ?? null)} className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-slate-200" />
                   </label>
                   <button type="submit" disabled={enviandoGarantia} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50">
-                    {enviandoGarantia ? 'Asignando reemplazo...' : 'Reportar falla'}
+                    {enviandoGarantia ? 'Enviando reporte...' : 'Enviar reporte de falla'}
                   </button>
                 </form>
               </details>
@@ -533,7 +545,7 @@ export default function TiendaPublicaClient({
                         <input required maxLength={20} value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" placeholder="+51 962 266 922" />
                       </label>
                     </div>
-                    <PaymentInstructions metodo={metodoPago} onMetodoChange={setMetodoPago} mostrarPlin={false} />
+                    <PaymentInstructions metodo={metodoPago} onMetodoChange={setMetodoPago} />
                     <label className="block space-y-1.5 text-sm text-slate-300">Código de operación
                       <input required={metodoPago !== 'INTERNACIONAL'} maxLength={100} value={codigoOperacion} onChange={(event) => setCodigoOperacion(event.target.value)} placeholder={metodoPago === 'INTERNACIONAL' ? 'Código de transferencia o MTCN (si aplica)' : 'Número de operación'} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" />
                     </label>

@@ -27,13 +27,15 @@ export const mockCuentas: Cuenta[] = [
 export const mockReclamos: Reclamo[] = [
   {
     id: 'r-1',
+    usuarioId: 'u-1',
     ventaId: 'v-55',
     servicio: 'HBO Max',
     correoAfectado: 'caido@ejemplo.com',
+    cuentaDefectuosaId: 'c-3',
     categoriaFallo: 'CAIDA',
-    comentarioCliente: 'El cliente indica que al entrar le sale pantalla de membresía vencida desde hoy en la tarde.',
+    motivo: 'El cliente indica que al entrar le sale pantalla de membresía vencida desde hoy en la tarde.',
     comprobanteFalloUrl: 'https://placehold.co/600x400/png?text=Error+en+Pantalla',
     estado: 'PENDIENTE_AUDITORIA',
-    fechaReporte: '2026-10-07 18:10',
+    fechaCreacion: '2026-10-07 18:10',
   },
 ];
