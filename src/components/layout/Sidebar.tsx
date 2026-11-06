@@ -7,7 +7,6 @@ import {
   Package, 
   ClipboardCheck, 
   ShoppingBag, 
-  CreditCard, 
   History, 
   HelpCircle,
   Tv
@@ -18,14 +17,13 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const adminLinks = [
-    { href: '/admin/saldos', label: 'Aprobar Saldos', icon: ShieldCheck },
+    { href: '/admin/pedidos', label: 'Pedidos pendientes', icon: ShieldCheck },
     { href: '/admin/inventario', label: 'Gestión Inventario', icon: Package },
     { href: '/admin/auditoria', label: 'Auditoría Nocturna', icon: ClipboardCheck },
   ];
 
   const clientLinks = [
     { href: '/dashboard/catalogo', label: 'Catálogo Cuentas', icon: ShoppingBag },
-    { href: '/dashboard/recargar', label: 'Recargar Saldo', icon: CreditCard },
     { href: '/dashboard/historial', label: 'Mis Compras / Reclamos', icon: History },
     { href: '/dashboard/soporte', label: 'Soporte y Ayuda', icon: HelpCircle },
   ];
@@ -101,16 +99,6 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Profile Footer Demo */}
-      <div className="pt-4 border-t border-slate-800 flex items-center gap-3 px-2">
-        <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500 flex items-center justify-center font-bold text-indigo-400 text-xs">
-          IZ
-        </div>
-        <div className="overflow-hidden">
-          <p className="text-xs font-semibold text-slate-200 truncate">Iza (Admin)</p>
-          <p className="text-[10px] text-emerald-400 font-medium">Saldo: S/ 250.00</p>
-        </div>
-      </div>
     </aside>
   );
 }

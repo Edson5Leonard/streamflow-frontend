@@ -1,95 +1,152 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ReceiptViewerModal } from '@/components/ui/ReceiptViewerModal';
+import { fetchApi, fetchApiBlob } from '@/lib/api';
+import type { MetodoPago } from '@/components/payments/PaymentInstructions';
 
-interface PagoSuscripcion {
-  id: number;
-  distribuidor: string;
+interface PagoMembresia {
+  id: string;
+  distribuidorId: string;
+  distribuidorNombre: string;
   monto: number;
-  fecha: string;
+  fechaSolicitud: string;
   comprobanteUrl: string;
-  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  metodoPago: MetodoPago;
+  codigoOperacion: string | null;
 }
 
-const INITIAL_PAGOS: PagoSuscripcion[] = [
-  { id: 101, distribuidor: 'Distribuidora Lima Streaming', monto: 30.00, fecha: '2026-10-19 14:30', comprobanteUrl: '📱 Captura_Yape_01.png', estado: 'PENDIENTE' },
-  { id: 102, distribuidor: 'Digital Store Perú', monto: 30.00, fecha: '2026-10-18 09:15', comprobanteUrl: '📱 Captura_Plin_02.png', estado: 'APROBADO' },
-];
+type Accion = 'aprobar' | 'rechazar';
 
 export default function PagosSuscripcionPage() {
-  const [pagos, setPagos] = useState<PagoSuscripcion[]>(INITIAL_PAGOS);
+  const [pagos, setPagos] = useState<PagoMembresia[]>([]);
+  const [seleccionado, setSeleccionado] = useState<{ pago: PagoMembresia; accion: Accion } | null>(null);
+  const [motivo, setMotivo] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
+  const [comprobante, setComprobante] = useState<{ url: string; mimeType: string } | null>(null);
 
-  const handleCambiarEstado = (id: number, nuevoEstado: 'APROBADO' | 'RECHAZADO') => {
-    setPagos(
-      pagos.map((p) => (p.id === id ? { ...p, estado: nuevoEstado } : p))
-    );
+  const cargar = async () => {
+    setPagos(await fetchApi<PagoMembresia[]>('/membresias/pendientes'));
+  };
+
+  useEffect(() => {
+    Promise.resolve().then(cargar).catch((err: unknown) =>
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar las solicitudes.'));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (comprobante) URL.revokeObjectURL(comprobante.url);
+    };
+  }, [comprobante]);
+
+  const verComprobante = async (pago: PagoMembresia) => {
+    try {
+      const nombre = pago.comprobanteUrl.split('/').pop();
+      if (!nombre) throw new Error('El pago no tiene un comprobante válido.');
+      const blob = await fetchApiBlob(`/membresias/comprobantes/${encodeURIComponent(nombre)}`);
+      setComprobante({ url: URL.createObjectURL(blob), mimeType: blob.type });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo abrir el comprobante.');
+    }
+  };
+
+  const confirmar = async () => {
+    if (!seleccionado) return;
+    setCargando(true);
+    setError('');
+    try {
+      await fetchApi(`/membresias/${seleccionado.pago.id}/${seleccionado.accion}`, {
+        method: 'PUT',
+        ...(seleccionado.accion === 'rechazar' ? { body: JSON.stringify({ motivo }) } : {}),
+      });
+      setPagos((actuales) => actuales.filter((pago) => pago.id !== seleccionado.pago.id));
+      setSeleccionado(null);
+      setMotivo('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo procesar la membresía.');
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold text-white">Verificación de Pagos Yape / Plin</h1>
-        <p className="text-gray-400 text-sm mt-1">Aprobación de cuotas mensuales (S/ 30) enviadas por distribuidores.</p>
-      </div>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Pagos de membresía</h1>
+        <p className="mt-1 text-sm text-slate-400">Verifica el comprobante bancario antes de extender 30 días el acceso del distribuidor.</p>
+      </header>
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+      {pagos.length === 0 && !error && <p className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400">No hay comprobantes pendientes.</p>}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-950 text-gray-400 font-semibold uppercase text-xs">
+      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+        <table className="w-full min-w-[700px] text-left text-sm">
+          <thead className="bg-slate-950/70 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="p-4">Distribuidor</th>
-              <th className="p-4">Monto / Fecha</th>
+              <th className="p-4">Monto / fecha</th>
+              <th className="p-4">Método / operación</th>
               <th className="p-4">Comprobante</th>
-              <th className="p-4">Estado</th>
               <th className="p-4 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800/60 text-gray-300">
-            {pagos.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-800/40 transition">
-                <td className="p-4 font-bold text-white">{p.distribuidor}</td>
+          <tbody className="divide-y divide-slate-800">
+            {pagos.map((pago) => (
+              <tr key={pago.id}>
+                <td className="p-4 font-medium text-slate-200">{pago.distribuidorNombre}</td>
                 <td className="p-4">
-                  <p className="text-green-400 font-extrabold">S/ {p.monto.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500">{p.fecha}</p>
-                </td>
-                <td className="p-4 text-xs font-mono text-blue-400 underline cursor-pointer">
-                  {p.comprobanteUrl}
+                  <p className="font-semibold text-slate-100">S/ {Number(pago.monto).toFixed(2)}</p>
+                  <p className="mt-1 text-xs text-slate-500">{new Date(pago.fechaSolicitud).toLocaleString()}</p>
                 </td>
                 <td className="p-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold ${
-                      p.estado === 'APROBADO'
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                        : p.estado === 'PENDIENTE'
-                        ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }`}
-                  >
-                    {p.estado}
-                  </span>
+                  <p>{pago.metodoPago}</p>
+                  {pago.codigoOperacion && <p className="mt-1 text-xs text-slate-500">{pago.codigoOperacion}</p>}
                 </td>
-                <td className="p-4 text-right space-x-2">
-                  {p.estado === 'PENDIENTE' && (
-                    <>
-                      <button
-                        onClick={() => handleCambiarEstado(p.id, 'APROBADO')}
-                        className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition shadow-lg shadow-green-600/20"
-                      >
-                        Aprobar
-                      </button>
-                      <button
-                        onClick={() => handleCambiarEstado(p.id, 'RECHAZADO')}
-                        className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg text-xs font-semibold transition border border-red-500/30"
-                      >
-                        Rechazar
-                      </button>
-                    </>
-                  )}
+                <td className="p-4">
+                  <button type="button" onClick={() => void verComprobante(pago)} className="text-xs font-medium text-slate-300 underline underline-offset-4 hover:text-white">Ver captura</button>
+                </td>
+                <td className="space-x-2 p-4 text-right">
+                  <button type="button" onClick={() => setSeleccionado({ pago, accion: 'aprobar' })} className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600">Aprobar 30 días</button>
+                  <button type="button" onClick={() => { setMotivo(''); setSeleccionado({ pago, accion: 'rechazar' }); }} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:border-red-900 hover:text-red-300">Rechazar</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        open={seleccionado?.accion === 'aprobar'}
+        title="Aprobar membresía"
+        description="Se activará la tienda y se extenderá su membresía por 30 días desde su vencimiento actual o desde hoy."
+        confirmLabel="Aprobar membresía"
+        loading={cargando}
+        onCancel={() => setSeleccionado(null)}
+        onConfirm={() => void confirmar()}
+      />
+      <ConfirmModal
+        open={seleccionado?.accion === 'rechazar'}
+        title="Rechazar comprobante"
+        description="El distribuidor conservará su estado actual. Indica un motivo claro para la corrección."
+        confirmLabel="Rechazar pago"
+        destructive
+        loading={cargando}
+        onCancel={() => setSeleccionado(null)}
+        onConfirm={() => void confirmar()}
+      >
+        <label className="block space-y-2 text-sm text-slate-300">
+          <span>Motivo</span>
+          <textarea required maxLength={500} value={motivo} onChange={(event) => setMotivo(event.target.value)} className="min-h-24 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white" />
+        </label>
+      </ConfirmModal>
+      <ReceiptViewerModal
+        open={Boolean(comprobante)}
+        src={comprobante?.url ?? null}
+        mimeType={comprobante?.mimeType}
+        onClose={() => setComprobante(null)}
+      />
     </div>
   );
 }

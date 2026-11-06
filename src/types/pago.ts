@@ -2,10 +2,14 @@ export type EstadoPago = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 
 export interface Pago {
   id: string;
-  usuarioId: string;
-  nombreUsuario: string;
+  compradorId: string;
+  distribuidorId: string;
+  servicioId: string;
+  metodoPago: 'YAPE' | 'PLIN' | 'BCP' | 'INTERBANK' | 'INTERNACIONAL';
   monto: number;
+  codigoOperacion: string | null;
   comprobanteUrl: string;
   estado: EstadoPago;
-  fechaCreacion: string;
+  fechaSolicitud: string;
+  motivoRechazo?: string | null;
 }

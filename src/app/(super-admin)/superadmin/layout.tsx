@@ -28,6 +28,9 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             <Link href="/superadmin/pagos-suscripcion" className="p-3 rounded-xl hover:bg-gray-800 text-gray-300 hover:text-white text-sm font-semibold transition">
               💳 Cobros S/ 30
             </Link>
+            <Link href="/superadmin/auditoria" className="p-3 rounded-xl hover:bg-gray-800 text-gray-300 hover:text-white text-sm font-semibold transition">
+              🛡️ Auditoría de cuentas
+            </Link>
           </nav>
         </div>
 

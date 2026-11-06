@@ -1,86 +1,72 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchApi } from '@/lib/api';
 
-const INGRESOS_MESES = [
-  { mes: 'Ene', monto: 300 },
-  { mes: 'Feb', monto: 450 },
-  { mes: 'Mar', monto: 600 },
-  { mes: 'Abr', monto: 510 },
-  { mes: 'May', monto: 750 },
-  { mes: 'Jun', monto: 900 },
-];
+interface EstadisticasGlobales {
+  ingresosRed: number;
+  ingresosMembresias: number;
+  ventasHoy: number;
+  distribuidoresActivos: number;
+  distribuidoresSuspendidos: number;
+}
 
 export default function SuperAdminDashboard() {
-  const [filtroPeriodo, setFiltroPeriodo] = useState('2026');
+  const [estadisticas, setEstadisticas] = useState<EstadisticasGlobales | null>(null);
+  const [error, setError] = useState('');
 
-  const totalAnual = INGRESOS_MESES.reduce((acc, curr) => acc + curr.monto, 0);
+  useEffect(() => {
+    Promise.resolve()
+      .then(() => fetchApi<EstadisticasGlobales>('/estadisticas/admin'))
+      .then(setEstadisticas)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se pudieron cargar las métricas globales.'));
+  }, []);
+
+  const metricas = [
+    {
+      label: 'Distribuidores activos',
+      value: estadisticas ? `${estadisticas.distribuidoresActivos}` : '—',
+      detail: `${estadisticas?.distribuidoresSuspendidos ?? '—'} suspendidos`,
+      color: 'text-emerald-400',
+    },
+    {
+      label: 'Ingresos por membresías',
+      value: `S/ ${Number(estadisticas?.ingresosMembresias ?? 0).toFixed(2)}`,
+      detail: 'Pagos de S/ 30 aprobados',
+      color: 'text-slate-100',
+    },
+    {
+      label: 'Ingresos de la red',
+      value: `S/ ${Number(estadisticas?.ingresosRed ?? 0).toFixed(2)}`,
+      detail: `${estadisticas?.ventasHoy ?? 0} ventas registradas hoy`,
+      color: 'text-slate-100',
+    },
+  ];
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white">Métricas Globales SaaS</h1>
-          <p className="text-gray-400 text-sm mt-1">Resumen financiero y control de distribuidores.</p>
-        </div>
-        <select
-          value={filtroPeriodo}
-          onChange={(e) => setFiltroPeriodo(e.target.value)}
-          className="bg-gray-900 border border-gray-800 text-white text-xs font-semibold px-4 py-2 rounded-xl focus:outline-none"
-        >
-          <option value="2026">Año 2026</option>
-          <option value="2025">Año 2025</option>
-        </select>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Resumen global</h1>
+        <p className="mt-1 text-sm text-slate-400">Finanzas de la red y estado de las tiendas distribuidoras.</p>
+      </header>
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {metricas.map((metrica) => (
+          <section key={metrica.label} className="rounded-xl border border-slate-800 bg-slate-900 p-5 transition-colors hover:border-slate-700">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{metrica.label}</p>
+            <p className={`mt-3 text-2xl font-semibold tabular-nums ${metrica.color}`}>{metrica.value}</p>
+            <p className="mt-2 text-xs text-slate-500">{metrica.detail}</p>
+          </section>
+        ))}
       </div>
 
-      {/* Tarjetas de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Distribuidores Activos</p>
-          <p className="text-3xl font-black text-green-400 mt-2">12 / 14</p>
-          <p className="text-xs text-gray-500 mt-1">2 cuentas suspendidas</p>
-        </div>
-
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ingresos por Membresía (S/ 30)</p>
-          <p className="text-3xl font-black text-blue-400 mt-2">S/ 360.00</p>
-          <p className="text-xs text-blue-400/80 mt-1">Cobro mensual corriente</p>
-        </div>
-
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ventas de Stock a Mayoristas</p>
-          <p className="text-3xl font-black text-indigo-400 mt-2">S/ 3,150.00</p>
-          <p className="text-xs text-gray-500 mt-1">Acumulado {filtroPeriodo}</p>
-        </div>
-      </div>
-
-      {/* Gráfico Simulado de Ingresos Mensuales */}
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl space-y-6">
-        <h3 className="font-bold text-white text-lg">Evolución de Ingresos ({filtroPeriodo})</h3>
-        
-        <div className="flex items-end justify-between h-48 pt-6 px-4 border-b border-gray-800">
-          {INGRESOS_MESES.map((item) => {
-            const porcentaje = (item.monto / 1000) * 100;
-            return (
-              <div key={item.mes} className="flex flex-col items-center space-y-2 group flex-1">
-                <span className="text-xs font-bold text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                  S/ {item.monto}
-                </span>
-                <div
-                  style={{ height: `${porcentaje}%` }}
-                  className="w-10 bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t-lg group-hover:from-blue-500 group-hover:to-indigo-400 transition-all"
-                />
-                <span className="text-xs text-gray-400 font-semibold">{item.mes}</span>
-              </div>
-            );
-          })}
-        </div>
-        
-        <div className="flex justify-between text-xs text-gray-400 font-medium">
-          <span>Proyección anual estimada: S/ {(totalAnual * 2).toFixed(2)}</span>
-          <span className="text-green-400 font-bold">+24% respecto al año anterior</span>
-        </div>
-      </div>
+      <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <h2 className="text-sm font-semibold text-slate-100">Actividad financiera</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          Los importes reflejan ventas confirmadas y membresías aprobadas guardadas en la base de datos. Las solicitudes pendientes no se contabilizan como ingresos.
+        </p>
+      </section>
     </div>
   );
 }

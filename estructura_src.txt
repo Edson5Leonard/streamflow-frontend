@@ -1,0 +1,74 @@
+src
+|── app
+|── |── (auth)
+|── |── |── login
+|── |── |── |── page.tsx
+|── |── |── registro
+|── |── |── |── page.tsx
+|── |── (comprador)
+|── |── |── dashboard
+|── |── |── |── catalogo
+|── |── |── |── |── page.tsx
+|── |── |── |── historial
+|── |── |── |── |── page.tsx
+|── |── |── |── layout.tsx
+|── |── |── |── page.tsx
+|── |── |── |── recargar
+|── |── |── |── |── page.tsx
+|── |── |── |── soporte
+|── |── |── |── |── page.tsx
+|── |── (distribuidor)
+|── |── |── admin
+|── |── |── |── auditoria
+|── |── |── |── |── page.tsx
+|── |── |── |── clientes
+|── |── |── |── |── page.tsx
+|── |── |── |── inventario
+|── |── |── |── |── page.tsx
+|── |── |── |── layout.tsx
+|── |── |── |── page.tsx
+|── |── |── |── reclamos
+|── |── |── |── |── page.tsx
+|── |── |── |── saldos
+|── |── |── |── |── page.tsx
+|── |── (super-admin)
+|── |── |── superadmin
+|── |── |── |── distribuidores
+|── |── |── |── |── page.tsx
+|── |── |── |── layout.tsx
+|── |── |── |── page.tsx
+|── |── |── |── pagos-suscripcion
+|── |── |── |── |── page.tsx
+|── |── |── |── stock-global
+|── |── |── |── |── page.tsx
+|── |── favicon.ico
+|── |── globals.css
+|── |── layout.tsx
+|── |── page.tsx
+|── components
+|── |── admin
+|── |── |── Form CargaStock.tsx
+|── |── |── TablaSaldos.tsx
+|── |── client
+|── |── |── CardServicio.tsx
+|── |── |── ModalReclamo.tsx
+|── |── layout
+|── |── |── Navbar.tsx
+|── |── |── Sidebar.tsx
+|── |── ui
+|── |── |── badge.tsx
+|── |── |── button.tsx
+|── |── |── card.tsx
+|── |── |── dialog.tsx
+|── |── |── input.tsx
+|── |── |── select.tsx
+|── |── |── table.tsx
+|── lib
+|── |── auth.ts
+|── |── mock-data.ts
+|── |── utils.ts
+|── middleware.ts
+|── types
+|── |── pago.ts
+|── |── reclamo.ts
+|── |── stock.ts

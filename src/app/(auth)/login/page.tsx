@@ -1,16 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Cookies from 'js-cookie';
+import { fetchApi } from '@/lib/api';
+import { saveSession } from '@/lib/auth';
+
+interface LoginResponse {
+  token: string;
+  role?: string;
+  roles?: string[];
+  usuarioId: string;
+  distribuidorId?: string | null;
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [tenantQuery, setTenantQuery] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      const distribuidorId = new URLSearchParams(window.location.search).get('distribuidorId');
+      if (distribuidorId) setTenantQuery(`?distribuidorId=${encodeURIComponent(distribuidorId)}`);
+    });
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,23 +35,28 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Simulación de respuesta JWT según el correo ingresado
-      const mockRole = email.includes('super')
-        ? 'SUPER_ADMIN'
-        : email.includes('admin')
-        ? 'DISTRIBUIDOR'
-        : 'COMPRADOR';
-
-      // Guardar cookies
-      Cookies.set('token', 'mock-jwt-token-123456', { expires: 1 });
-      Cookies.set('role', mockRole, { expires: 1 });
+      const session = await fetchApi<LoginResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ correo: email, password }),
+      });
+      const roles = session.roles ?? [];
+      const role = session.role
+        ?? ['ROLE_SUPER_ADMIN', 'ROLE_DISTRIBUIDOR', 'ROLE_COMPRADOR']
+          .find((candidate) => roles.includes(candidate))
+        ?? '';
+      const roleNormalizado = role.replace(/^ROLE_/, '');
+      if (!session.token || !session.usuarioId
+          || !['SUPER_ADMIN', 'DISTRIBUIDOR', 'COMPRADOR'].includes(roleNormalizado)) {
+        throw new Error('El servidor devolvió una sesión incompleta.');
+      }
+      saveSession({ ...session, role });
 
       // Redirección
-      if (mockRole === 'SUPER_ADMIN') router.push('/superadmin');
-      else if (mockRole === 'DISTRIBUIDOR') router.push('/admin');
+      if (roleNormalizado === 'SUPER_ADMIN') router.push('/superadmin');
+      else if (roleNormalizado === 'DISTRIBUIDOR') router.push('/admin');
       else router.push('/dashboard');
     } catch (err) {
-      setError('Credenciales incorrectas o problema de conexión.');
+      setError(err instanceof Error ? err.message : 'Credenciales incorrectas o problema de conexión.');
     } finally {
       setLoading(false);
     }
@@ -117,7 +139,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-400">
             ¿Aún no tienes una cuenta?{' '}
             <Link
-              href="/registro"
+              href={`/registro${tenantQuery}`}
               className="font-semibold text-blue-400 hover:text-blue-300 transition-colors underline-offset-4 hover:underline"
             >
               Regístrate aquí

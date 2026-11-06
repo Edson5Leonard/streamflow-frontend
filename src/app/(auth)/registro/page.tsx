@@ -1,25 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { fetchApi } from '@/lib/api';
 
 export default function RegistroPage() {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [tenantQuery, setTenantQuery] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      const distribuidorId = new URLSearchParams(window.location.search).get('distribuidorId');
+      if (distribuidorId) setTenantQuery(`?distribuidorId=${encodeURIComponent(distribuidorId)}`);
+    });
+  }, []);
 
   const handleRegistro = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    setTimeout(() => {
+    try {
+      const distribuidorId = new URLSearchParams(window.location.search).get('distribuidorId');
+      if (!distribuidorId) {
+        throw new Error('Abre el enlace de registro de tu distribuidor para crear tu cuenta en su tienda.');
+      }
+      await fetchApi('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombreCompleto: nombre,
+          correo: email,
+          password,
+          distribuidorId,
+        }),
+      });
       setLoading(false);
-      alert('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.');
-      router.push('/login');
-    }, 1000);
+      router.push(`/login?distribuidorId=${encodeURIComponent(distribuidorId)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar el registro.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,8 +71,14 @@ export default function RegistroPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white">Crear una Cuenta</h2>
-          <p className="text-sm text-gray-400">Regístrate para recargar saldo y obtener tus cuentas</p>
+          <p className="text-sm text-gray-400">Regístrate para comprar servicios de streaming en tu tienda</p>
         </div>
+
+        {error && (
+          <div role="alert" className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg text-center font-medium">
+            {error}
+          </div>
+        )}
 
         {/* Formulario */}
         <form onSubmit={handleRegistro} className="space-y-4">
@@ -106,7 +138,7 @@ export default function RegistroPage() {
           <p className="text-sm text-gray-400">
             ¿Ya tienes una cuenta?{' '}
             <Link
-              href="/login"
+              href={`/login${tenantQuery}`}
               className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors underline-offset-4 hover:underline"
             >
               Inicia sesión aquí

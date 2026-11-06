@@ -1,100 +1,96 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Reclamo } from '@/types/reclamo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ClipboardCheck, RefreshCw, Trash, AlertTriangle, Eye, MessageSquare, RotateCcw } from 'lucide-react';
+import { ClipboardCheck, RefreshCw, Trash, AlertTriangle, Eye, MessageSquare } from 'lucide-react';
+import { fetchApi } from '@/lib/api';
 
-const mockEjemplos: Reclamo[] = [
-  {
-    id: 'r-101',
-    ventaId: 'v-1',
-    servicio: 'HBO Max',
-    correoAfectado: 'hbomax_cliente1@ejemplo.com',
-    categoriaFallo: 'CAIDA',
-    comentarioCliente: 'El cliente indica que al entrar le sale pantalla de membresía vencida desde hoy en la tarde.',
-    comprobanteFalloUrl: 'https://placehold.co/600x400/png?text=Error:+Membresia+Vencida',
-    estado: 'PENDIENTE_AUDITORIA',
-    fechaReporte: '2026-10-07 18:10',
-  },
-  {
-    id: 'r-102',
-    ventaId: 'v-2',
-    servicio: 'Netflix',
-    correoAfectado: 'netflix_premium2@ejemplo.com',
-    categoriaFallo: 'CLAVE_INCORRECTA',
-    comentarioCliente: 'Cambiaron la contraseña de la cuenta máster y no podemos acceder a ningún perfil.',
-    comprobanteFalloUrl: 'https://placehold.co/600x400/png?text=Error:+Contrasena+Incorrecta',
-    estado: 'PENDIENTE_AUDITORIA',
-    fechaReporte: '2026-10-07 19:45',
-  },
-  {
-    id: 'r-103',
-    ventaId: 'v-3',
-    servicio: 'Disney+',
-    correoAfectado: 'disney_peru@ejemplo.com',
-    categoriaFallo: 'CORREO_NO_EXISTE',
-    comentarioCliente: 'Al intentar iniciar sesión dice que el correo electrónico no está registrado en Disney+.',
-    comprobanteFalloUrl: 'https://placehold.co/600x400/png?text=Error:+Cuenta+No+Existe',
-    estado: 'PENDIENTE_AUDITORIA',
-    fechaReporte: '2026-10-07 20:15',
-  },
-  {
-    id: 'r-104',
-    ventaId: 'v-4',
-    servicio: 'Spotify',
-    correoAfectado: 'spotify_fam@ejemplo.com',
-    categoriaFallo: 'CAIDA',
-    comentarioCliente: 'Se cayó el plan familiar, la cuenta volvió a Spotify Free.',
-    comprobanteFalloUrl: 'https://placehold.co/600x400/png?text=Error:+Cuenta+Free',
-    estado: 'RESUELTO_RECUPERADO',
-    fechaReporte: '2026-10-06 14:00',
-  },
-];
+interface Reclamo {
+  id: string;
+  ventaId: string;
+  usuarioId: string;
+  categoriaFallo: string;
+  motivo: string;
+  comprobanteFalloUrl: string;
+  estado: string;
+  fechaCreacion: string;
+  servicio: string;
+  correoAfectado: string;
+  comentarioCliente: string;
+}
+
+interface Venta {
+  id: string;
+  cuentaStockId: string;
+}
+
+interface Cuenta {
+  id: string;
+  servicioId: string;
+  correo: string;
+}
+
+interface Servicio {
+  id: string;
+  nombre: string;
+}
+
+interface Usuario {
+  id: string;
+  nombreCompleto: string;
+}
 
 export default function AdminAuditoriaPage() {
   const [reclamos, setReclamos] = useState<Reclamo[]>([]);
   const [cargado, setCargado] = useState(false);
   const [imagenModal, setImagenModal] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const guardados = localStorage.getItem('auditoria_reclamos');
-    if (guardados) {
-      setReclamos(JSON.parse(guardados));
-    } else {
-      setReclamos(mockEjemplos);
-      localStorage.setItem('auditoria_reclamos', JSON.stringify(mockEjemplos));
-    }
-    setCargado(true);
+    Promise.all([
+      fetchApi<Reclamo[]>('/reclamos/pendientes'),
+      fetchApi<Venta[]>('/ventas'),
+      fetchApi<Cuenta[]>('/cuentas'),
+      fetchApi<Servicio[]>('/servicios/activos'),
+      fetchApi<Usuario[]>('/usuarios'),
+    ])
+      .then(([reclamosData, ventas, cuentas, servicios, usuarios]) => {
+        const ventasPorId = new Map(ventas.map((venta) => [venta.id, venta]));
+        const cuentasPorId = new Map(cuentas.map((cuenta) => [cuenta.id, cuenta]));
+        const serviciosPorId = new Map(servicios.map((servicio) => [servicio.id, servicio]));
+        const nombresPorId = new Map(usuarios.map((usuario) => [usuario.id, usuario.nombreCompleto]));
+        setReclamos(reclamosData.map((reclamo) => {
+          const venta = ventasPorId.get(reclamo.ventaId);
+          const cuenta = venta ? cuentasPorId.get(venta.cuentaStockId) : undefined;
+          return {
+            ...reclamo,
+            servicio: cuenta ? serviciosPorId.get(cuenta.servicioId)?.nombre ?? 'Servicio' : 'Servicio',
+            correoAfectado: cuenta?.correo ?? nombresPorId.get(reclamo.usuarioId) ?? 'Comprador',
+            comentarioCliente: reclamo.motivo,
+          };
+        }));
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se pudieron cargar los reclamos.'))
+      .finally(() => setCargado(true));
   }, []);
 
-  const actualizarReclamos = (nuevos: Reclamo[]) => {
-    setReclamos(nuevos);
-    localStorage.setItem('auditoria_reclamos', JSON.stringify(nuevos));
-  };
-
-  const handleReemplazar = (id: string) => {
-    const actualizados = reclamos.map((r) =>
-      r.id === id ? { ...r, estado: 'RESUELTO_RECUPERADO' as const } : r
-    );
-    actualizarReclamos(actualizados);
-  };
-
-  const handleDescartar = (id: string) => {
-    const actualizados = reclamos.map((r) =>
-      r.id === id ? { ...r, estado: 'RESUELTO_DESCARTADO' as const } : r
-    );
-    actualizarReclamos(actualizados);
-  };
-
-  const handleRestablecerEjemplos = () => {
-    actualizarReclamos(mockEjemplos);
+  const actualizarEstado = async (id: string, estado: 'RESUELTO' | 'RECHAZADO') => {
+    setError('');
+    try {
+      await fetchApi(`/reclamos/${id}/estado`, {
+        method: 'PUT',
+        body: JSON.stringify({ estado }),
+      });
+      setReclamos((actuales) => actuales.filter((reclamo) => reclamo.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar el reclamo.');
+    }
   };
 
   if (!cargado) return null;
 
-  const pendientes = reclamos.filter((r) => r.estado === 'PENDIENTE_AUDITORIA');
+  const pendientes = reclamos.filter((r) => r.estado === 'PENDIENTE');
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -103,23 +99,17 @@ export default function AdminAuditoriaPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Auditoría Nocturna de Reclamos</h1>
           <p className="text-sm text-slate-500">
-            Revisa los reportes de caídas, comentarios de los revendedores y asigna cuentas de reemplazo.
+            Revisa los reportes enviados por tus compradores y resuelve o rechaza cada caso.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleRestablecerEjemplos}
-            className="text-xs text-slate-600 gap-1 border-slate-300 hover:bg-slate-50"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Restablecer Demos
-          </Button>
           <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 py-1.5 px-3">
             <AlertTriangle className="w-4 h-4 mr-1" /> Pendientes: {pendientes.length}
           </Badge>
         </div>
       </div>
+
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       {/* Tabla de Reclamos */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -170,30 +160,24 @@ export default function AdminAuditoriaPage() {
                   </Button>
                 </td>
                 <td className="p-4">
-                  {item.estado === 'PENDIENTE_AUDITORIA' && (
+                  {item.estado === 'PENDIENTE' && (
                     <Badge className="bg-amber-100 text-amber-800 border-none">OBSERVADO</Badge>
-                  )}
-                  {item.estado === 'RESUELTO_RECUPERADO' && (
-                    <Badge className="bg-emerald-100 text-emerald-800 border-none">REEMPLAZADO</Badge>
-                  )}
-                  {item.estado === 'RESUELTO_DESCARTADO' && (
-                    <Badge className="bg-slate-100 text-slate-600 border-none">DESCARTADO</Badge>
                   )}
                 </td>
                 <td className="p-4">
-                  {item.estado === 'PENDIENTE_AUDITORIA' && (
+                  {item.estado === 'PENDIENTE' && (
                     <div className="flex items-center justify-center gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleReemplazar(item.id)}
+                        onClick={() => actualizarEstado(item.id, 'RESUELTO')}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1 text-xs"
                       >
-                        <RefreshCw className="w-3.5 h-3.5" /> Dar Garantía
+                        <RefreshCw className="w-3.5 h-3.5" /> Marcar resuelto
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDescartar(item.id)}
+                        onClick={() => actualizarEstado(item.id, 'RECHAZADO')}
                         className="text-rose-600 border-rose-200 hover:bg-rose-50 gap-1 text-xs"
                       >
                         <Trash className="w-3.5 h-3.5" /> Descartar

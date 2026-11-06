@@ -1,27 +1,5 @@
 import { Cuenta } from '@/types/stock';
-import { Pago } from '@/types/pago';
 import { Reclamo } from '@/types/reclamo';
-
-export const mockPagos: Pago[] = [
-  {
-    id: 'p-1',
-    usuarioId: 'u-101',
-    nombreUsuario: 'Juan Pérez (Revendedor)',
-    monto: 50.0,
-    comprobanteUrl: 'https://placehold.co/400x600/png?text=Comprobante+Yape+S/50',
-    estado: 'PENDIENTE',
-    fechaCreacion: '2026-10-07 14:30',
-  },
-  {
-    id: 'p-2',
-    usuarioId: 'u-102',
-    nombreUsuario: 'Carlos Gomez',
-    monto: 100.0,
-    comprobanteUrl: 'https://placehold.co/400x600/png?text=Comprobante+Plin+S/100',
-    estado: 'PENDIENTE',
-    fechaCreacion: '2026-10-07 15:10',
-  },
-];
 
 export const mockCuentas: Cuenta[] = [
   {

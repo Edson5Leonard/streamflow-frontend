@@ -12,8 +12,9 @@ export default function DistribuidorLayout({ children }: { children: React.React
           <nav className="flex flex-col space-y-3">
             <Link href="/admin" className="hover:text-yellow-400">📈 Resumen Ventas</Link>
             <Link href="/admin/inventario" className="hover:text-yellow-400">📦 Cargar Stock</Link>
-            <Link href="/admin/saldos" className="hover:text-yellow-400">💰 Aprobar Yape/Plin</Link>
+            <Link href="/admin/pedidos" className="hover:text-yellow-400">🧾 Pedidos y comprobantes</Link>
             <Link href="/admin/reclamos" className="hover:text-yellow-400">🛡️ Reclamos Nocturnos</Link>
+            <Link href="/admin/membresia" className="hover:text-yellow-400">💳 Membresía</Link>
             <Link href="/admin/clientes" className="hover:text-yellow-400">👥 Mis Clientes</Link>
           </nav>
         </div>

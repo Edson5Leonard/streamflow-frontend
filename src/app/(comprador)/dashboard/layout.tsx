@@ -11,7 +11,6 @@ export default function CompradorLayout({ children }: { children: React.ReactNod
         <nav className="flex items-center space-x-6">
           <Link href="/dashboard/catalogo" className="hover:text-blue-400">🛒 Catálogo</Link>
           <Link href="/dashboard/historial" className="hover:text-blue-400">📋 Mis Cuentas</Link>
-          <Link href="/dashboard/recargar" className="hover:text-blue-400">💵 Recargar Saldo</Link>
           <Link href="/dashboard/soporte" className="hover:text-blue-400">🤖 Soporte / Bot</Link>
           
           {/* Botón Cerrar Sesión */}

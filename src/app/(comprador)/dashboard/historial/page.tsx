@@ -1,24 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchApi } from '@/lib/api';
+import { CredentialCard } from '@/components/client/CredentialCard';
 
 interface CuentaAdquirida {
-  id: number;
+  id: string;
   servicio: string;
-  email: string;
+  correo: string;
   password: string;
-  perfil: string;
-  pin: string;
-  fechaCompra: string;
+  perfilPin: string | null;
+  fechaVenta: string;
 }
 
-const INITIAL_MIS_CUENTAS: CuentaAdquirida[] = [
-  { id: 1, servicio: 'Netflix Premium', email: 'net_tienda1@gmail.com', password: 'clave123', perfil: 'Perfil 1', pin: '1234', fechaCompra: '2026-10-18' },
-  { id: 2, servicio: 'Max (HBO)', email: 'hbo_tienda1@gmail.com', password: 'clave789', perfil: 'Perfil 2', pin: '3333', fechaCompra: '2026-10-10' },
-];
+interface PedidoComprador {
+  id: string;
+  servicio: string;
+  monto: number;
+  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  motivoRechazo: string | null;
+  fechaSolicitud: string;
+}
 
 export default function HistorialCompradorPage() {
-  const [cuentas] = useState<CuentaAdquirida[]>(INITIAL_MIS_CUENTAS);
+  const [cuentas, setCuentas] = useState<CuentaAdquirida[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoComprador[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    Promise.all([
+      fetchApi<CuentaAdquirida[]>('/ventas/mis-compras'),
+      fetchApi<PedidoComprador[]>('/pagos/mis-pedidos'),
+    ])
+      .then(([compras, pedidosComprador]) => {
+        setCuentas(compras);
+        setPedidos(pedidosComprador);
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se pudo cargar el historial.'));
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -27,36 +46,42 @@ export default function HistorialCompradorPage() {
         <p className="text-gray-400 text-sm mt-1">Consulta tus credenciales de acceso activas.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cuentas.map((c) => (
-          <div key={c.id} className="bg-gray-900 border border-gray-800 p-6 rounded-2xl space-y-4 shadow-xl">
-            <div className="flex justify-between items-center border-b border-gray-800 pb-3">
-              <h3 className="font-bold text-white text-lg">{c.servicio}</h3>
-              <span className="text-xs text-gray-500">{c.fechaCompra}</span>
-            </div>
+      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
 
-            <div className="space-y-2 text-xs font-mono">
-              <div className="bg-gray-950 p-3 rounded-xl border border-gray-800">
-                <span className="text-gray-500 block">Correo:</span>
-                <span className="text-blue-400 font-bold">{c.email}</span>
+      {pedidos.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-bold text-white">Pedidos y pagos</h2>
+          {pedidos.map((pedido) => (
+            <article key={pedido.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
+              <div>
+                <p className="font-semibold text-white">{pedido.servicio} · S/ {Number(pedido.monto).toFixed(2)}</p>
+                <p className="mt-1 text-xs text-gray-400">Pedido {pedido.id} · {new Date(pedido.fechaSolicitud).toLocaleString()}</p>
+                {pedido.estado === 'PENDIENTE' && <p className="mt-1 text-sm text-amber-300">Comprobante recibido; esperando la validación del distribuidor.</p>}
+                {pedido.estado === 'RECHAZADO' && <p className="mt-1 text-sm text-red-300">Pago rechazado: {pedido.motivoRechazo ?? 'Comunícate con el distribuidor.'}</p>}
               </div>
-              <div className="bg-gray-950 p-3 rounded-xl border border-gray-800">
-                <span className="text-gray-500 block">Contraseña:</span>
-                <span className="text-amber-400 font-bold">{c.password}</span>
-              </div>
-              <div className="flex space-x-2">
-                <div className="flex-1 bg-gray-950 p-3 rounded-xl border border-gray-800">
-                  <span className="text-gray-500 block">Perfil:</span>
-                  <span className="text-white font-bold">{c.perfil}</span>
-                </div>
-                <div className="flex-1 bg-gray-950 p-3 rounded-xl border border-gray-800">
-                  <span className="text-gray-500 block">PIN:</span>
-                  <span className="text-green-400 font-bold">{c.pin}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${pedido.estado === 'PENDIENTE' ? 'bg-amber-950 text-amber-300' : pedido.estado === 'RECHAZADO' ? 'bg-red-950 text-red-300' : 'bg-emerald-950 text-emerald-300'}`}>
+                {pedido.estado === 'PENDIENTE' ? 'En revisión' : pedido.estado === 'RECHAZADO' ? 'Rechazado' : 'Aprobado'}
+              </span>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {!error && cuentas.length === 0 && pedidos.length === 0 && <p className="text-sm text-gray-400">Aún no tienes compras ni pedidos registrados.</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {cuentas.map((c) => {
+          return (
+            <CredentialCard
+              key={c.id}
+              servicio={c.servicio}
+              correo={c.correo}
+              password={c.password}
+              perfilPin={c.perfilPin}
+              fecha={c.fechaVenta}
+            />
+          );
+        })}
       </div>
     </div>
   );
