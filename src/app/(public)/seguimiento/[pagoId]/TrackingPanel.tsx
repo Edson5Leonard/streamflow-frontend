@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { trackingHref, type OrderLink } from '../../components/tracking-links';
 import { PublicClaimForm } from '../../tiendas/[distribuidorId]/components/PublicClaimForm';
+import { PurchaseConfirmation } from '../../components/PurchaseConfirmation';
 
 export function TrackingPanel({ id, token, orders }: { id: string; token: string; orders: OrderLink[] }) {
   const query = usePublicTracking(id, token);
@@ -25,6 +26,7 @@ export function TrackingPanel({ id, token, orders }: { id: string; token: string
     {query.isLoading && <LoadingState label="Consultando pedido"/>}
     {query.error && <ErrorState description={query.error.message} onRetry={() => void query.refetch()}/>}
     {payment && <>
+      <PurchaseConfirmation id={id} />
       <div className="space-y-3 rounded-2xl border bg-card p-6">
         <PaymentStatusBadge status={payment.estado}/>
         <p>{payment.estado === 'PENDIENTE' ? 'El distribuidor está revisando tu comprobante.' :

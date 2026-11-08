@@ -4,12 +4,12 @@ import { formatCurrency } from '@/utils/format-currency';
 import type { StoreProduct } from '@/features/stores/types/stores.types';
 import { StoreSleeve } from './StoreSleeve';
 
-type Props = { product: StoreProduct; quantity: number; full: boolean; onAdd: (product: StoreProduct) => void };
+type Props = { product: StoreProduct; quantity: number; full: boolean; onAdd: (product: StoreProduct) => void; onBuy: (product: StoreProduct) => void };
 
-export function PublicProductCard({ product, quantity, full, onAdd }: Props) {
+export function PublicProductCard({ product, quantity, full, onAdd, onBuy }: Props) {
   const available = product.stockDisponible > 0;
   const limited = quantity >= product.stockDisponible;
-  const label = !available ? 'Agotado' : limited ? 'Stock máximo' : full ? 'Carrito completo' : 'Agregar';
+  const label = !available ? 'Agotado' : limited ? 'Stock máximo' : full ? 'Carrito completo' : 'Agregar al carrito';
   return (
     <AnimatedCard lift={3} className="h-full">
       <article className="sf-shop-card">
@@ -21,7 +21,8 @@ export function PublicProductCard({ product, quantity, full, onAdd }: Props) {
             <strong>{formatCurrency(product.precio)}</strong>
             <span>{available ? `${product.stockDisponible} en stock` : 'Sin stock'}</span>
           </div>
-          <button type="button" disabled={limited || full} onClick={() => onAdd(product)}
+          <button type="button" disabled={!available} aria-label={'Comprar · ' + product.nombre} onClick={() => onBuy(product)}>Comprar</button>
+          <button className="sf-shop-add" type="button" disabled={limited || full} onClick={() => onAdd(product)}
             aria-label={`${label} · ${product.nombre}`}>
             {quantity ? <Check size={16} /> : <Plus size={16} />}
             {label}{quantity > 0 && ` · ${quantity} en carrito`}

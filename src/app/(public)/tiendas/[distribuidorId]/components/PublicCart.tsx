@@ -15,6 +15,7 @@ import { SlideIn } from '@/components/animation/SlideIn';
 import { CART_LIMIT, emptyDraft, useCartItems, useCartStore } from '@/stores/cart.store';
 import { formatCurrency } from '@/utils/format-currency';
 import { trackingHref } from '../../../components/tracking-links';
+import { useConfirmation } from '../../../components/PurchaseConfirmation';
 import { CartServiceLine } from './CartServiceLine';
 import './storefront.css';
 
@@ -25,12 +26,17 @@ export function PublicCart({ distributorId }: { distributorId: string }) {
     return <ErrorState title="No pudimos cargar los productos de esta tienda"
       description={catalog.error?.message} onRetry={() => void catalog.refetch()} />;
   }
-  return <CartContents distributorId={distributorId} catalog={catalog.data} />;
+  return <CheckoutContents distributorId={distributorId} catalog={catalog.data} />;
 }
 
-function CartContents({ distributorId, catalog }: { distributorId: string; catalog: StoreCatalog }) {
-  const quantities = useCartItems(distributorId);
-  const draft = useCartStore(state => state.drafts[distributorId] ?? emptyDraft);
+export function CheckoutContents({ distributorId, catalog, singleId, modal = false, onBusy, onContinue }: {
+  distributorId: string; catalog: StoreCatalog; singleId?: string; modal?: boolean;
+  onBusy?: (busy: boolean) => void; onContinue?: () => void;
+}) {
+  const cart = useCartItems(distributorId);
+  const quantities = singleId ? { [singleId]: 1 } : cart;
+  const draftKey = singleId ? distributorId + ':direct' : distributorId;
+  const draft = useCartStore(state => state.drafts[draftKey] ?? emptyDraft);
   const { change, editDraft, clear } = useCartStore.getState();
   const checkout = usePublicCheckout();
   const router = useRouter();
@@ -55,6 +61,7 @@ function CartContents({ distributorId, catalog }: { distributorId: string; catal
     if (draft.method !== 'INTERNACIONAL' && !code) return setError('Ingresa el código de operación.');
     if (!draft.file?.size || draft.file.size > 5 * 1024 * 1024) return setError('Adjunta un comprobante de hasta 5 MB.');
     submitting.current = true;
+    onBusy?.(true);
     const units = selected.flatMap(product => Array.from({ length: quantities[product.servicioId] }, () => product));
     try {
       const result = await checkout.mutateAsync({
@@ -65,55 +72,65 @@ function CartContents({ distributorId, catalog }: { distributorId: string; catal
       if (!orders.length) throw new Error('No se recibió un enlace de seguimiento.');
       const href = trackingHref(orders[0], orders);
       setReceipt(href);
-      clear(distributorId);
+      useConfirmation.getState().save({
+        ids: orders.map(order => order.id), store: catalog.nombreTienda,
+        customer: draft.name.trim(), phone, method: draft.method, operation: code,
+        total: result.reduce((sum, payment) => sum + payment.monto, 0),
+        items: selected.map(p => `${quantities[p.servicioId]} × ${p.nombre} (${formatCurrency(p.precio)} c/u)`),
+      });
+      if (singleId) editDraft(draftKey, emptyDraft);
+      else clear(distributorId);
       router.push(href);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se pudo enviar el pedido.');
       submitting.current = false;
+      onBusy?.(false);
     }
   }
 
   return (
     <div className="sf-cart-page">
-      <header className="sf-cart-hero">
+      {!modal && <header className="sf-cart-hero">
         <SlideIn>
           <Link href={storeUrl} className="sf-shop-back"><ArrowLeft size={16} /> Volver a {catalog.nombreTienda}</Link>
           <h1>Tu carrito</h1>
           <p>{catalog.nombreTienda}</p>
         </SlideIn>
         <ShoppingCart size={56} strokeWidth={1.25} aria-hidden="true" />
-      </header>
+      </header>}
       {receipt ? <div role="status" className="sf-cart-panel"><h2>Pedido enviado</h2><Link href={receipt}>Ver seguimiento →</Link></div> :
         !count ? <section className="sf-cart-panel sf-cart-empty">
           <ShoppingCart size={32} /><h2>Tu carrito está vacío</h2>
           <p>Elige un servicio de esta tienda para comenzar.</p>
-          <Link className="sf-cart-action" href={storeUrl}>Explorar catálogo <ArrowRight size={16} /></Link>
+          {modal ? <button type="button" className="sf-cart-action" onClick={onContinue}>Seguir comprando</button> :
+            <Link className="sf-cart-action" href={storeUrl}>Explorar catálogo <ArrowRight size={16} /></Link>}
         </section> : (
         <form onSubmit={submit} className="sf-cart-grid">
           <fieldset className="sf-cart-panel sf-cart-summary" disabled={checkout.isPending}>
-            <h2>Servicios seleccionados</h2>
+            <h2>{singleId ? 'Tu servicio' : 'Servicios seleccionados'}</h2>
             <ul>{selected.map(product => (
               <CartServiceLine key={product.servicioId} product={product} quantity={quantities[product.servicioId]}
-                full={count >= CART_LIMIT} change={delta => change(distributorId, product.servicioId, delta, product.stockDisponible)} />
+                fixed={!!singleId} full={count >= CART_LIMIT} change={delta => change(distributorId, product.servicioId, delta, product.stockDisponible)} />
             ))}</ul>
             {missing.map(id => <p key={id}>Un servicio ya no está en el catálogo. <button type="button" className="underline"
               onClick={() => change(distributorId, id, -quantities[id], 0)}>Quitar servicio</button></p>)}
             <div className="sf-cart-total"><span>Total · {count} {count === 1 ? 'unidad' : 'unidades'}</span><strong>{formatCurrency(total)}</strong></div>
-            <Link href={storeUrl} className="sf-cart-back"><ArrowLeft size={15} /> Seguir comprando</Link>
+            {modal ? <button type="button" onClick={onContinue} className="sf-cart-back"><ArrowLeft size={15} /> Seguir comprando</button> :
+              <Link href={storeUrl} className="sf-cart-back"><ArrowLeft size={15} /> Seguir comprando</Link>}
           </fieldset>
           <fieldset className="sf-cart-panel sf-cart-checkout" disabled={checkout.isPending}>
             <h2>Completar pedido</h2>
             <label>Nombre completo<input required minLength={2} autoComplete="name" value={draft.name}
-              onChange={e => editDraft(distributorId, { name: e.target.value })} /></label>
+              onChange={e => editDraft(draftKey, { name: e.target.value })} /></label>
             <label>WhatsApp<input required type="tel" autoComplete="tel" value={draft.phone}
-              onChange={e => editDraft(distributorId, { phone: e.target.value })} /></label>
-            <PaymentInstructions metodo={draft.method} onMetodoChange={method => editDraft(distributorId, { method })} />
+              onChange={e => editDraft(draftKey, { phone: e.target.value })} /></label>
+            <PaymentInstructions metodo={draft.method} onMetodoChange={method => editDraft(draftKey, { method })} />
             <label>Código de operación {draft.method === 'INTERNACIONAL' && '(opcional)'}
               <input required={draft.method !== 'INTERNACIONAL'} maxLength={100} value={draft.code}
-                onChange={e => editDraft(distributorId, { code: e.target.value })} /></label>
+                onChange={e => editDraft(draftKey, { code: e.target.value })} /></label>
             <label>Comprobante (JPG, PNG o PDF · hasta 5 MB)
               <input type="file" required={!draft.file} accept="image/png,image/jpeg,application/pdf"
-                onChange={e => { if (e.target.files?.[0]) editDraft(distributorId, { file: e.target.files[0] }); }} /></label>
+                onChange={e => { if (e.target.files?.[0]) editDraft(draftKey, { file: e.target.files[0] }); }} /></label>
             {draft.file && <small>Archivo seleccionado: {draft.file.name}</small>}
             {error && <p role="alert" className="text-destructive">{error}</p>}
             <button className="sf-cart-action" disabled={invalid || checkout.isPending}>

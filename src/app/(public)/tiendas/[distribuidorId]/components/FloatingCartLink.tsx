@@ -6,7 +6,7 @@ export function FloatingCartLink({ storeId, count }: { storeId: string; count: n
   return (
     <Link href={getStoreHref(storeId) + '/carrito'} className="sf-cart-fab"
       aria-label={`Ver carrito · ${count} ${count === 1 ? 'unidad' : 'unidades'}`} title="Ver carrito">
-      <ShoppingCart size={24} aria-hidden="true" />
+      <ShoppingCart size={30} aria-hidden="true" />
       <span key={count} aria-hidden="true">{count}</span>
     </Link>
   );

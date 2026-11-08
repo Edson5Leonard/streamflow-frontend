@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Conexión con el backend
 
-Define `NEXT_PUBLIC_API_URL` con la URL base de la API (por defecto `http://localhost:8080/api`). En el backend, define `FRONTEND_URL` con el origen del frontend para habilitar CORS (por defecto `http://localhost:3000`).
+Define `NEXT_PUBLIC_API_URL` con la URL base de la API (por defecto `http://localhost:8080/api`). `NEXT_PUBLIC_WHATSAPP_NUMBER` define el número fijo que recibe los mensajes de confirmación de pedidos por WhatsApp (por defecto `51962266922`, con código de país y solo dígitos). En el backend, define `FRONTEND_URL` con el origen del frontend para habilitar CORS (por defecto `http://localhost:3000`).
 
 El superadministrador crea cada distribuidor desde **Gestión de Distribuidores**. La aplicación muestra el enlace de registro con `distribuidorId`; el comprador debe registrarse desde ese enlace para quedar asociado a la tienda. Después del login, el backend obtiene el tenant desde el usuario autenticado: las peticiones de inventario, compras, recargas y reclamos no aceptan un tenant enviado por el navegador.
 
