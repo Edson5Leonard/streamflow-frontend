@@ -1,0 +1,3 @@
+import Link from 'next/link';
+import { Package } from 'lucide-react';
+export function InventorySummary({ available, warranty }: { available: number; warranty: number }) { return <section className="rounded-2xl border bg-card p-5"><div className="flex items-center justify-between"><h2 className="font-bold">Inventario</h2><Package size={19} className="text-violet-500" /></div><p className="mt-5 text-3xl font-bold">{available}</p><p className="mt-1 text-sm text-muted-foreground">Cuentas de venta disponibles</p><p className="mt-3 text-sm text-muted-foreground">{warranty} cuenta(s) de garantía disponibles</p><Link href="/admin/inventario" className="mt-5 inline-block text-sm font-semibold text-violet-600 dark:text-violet-300">Gestionar inventario →</Link></section>; }

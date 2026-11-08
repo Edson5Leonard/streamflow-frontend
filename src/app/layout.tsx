@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import './globals.css';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import { AppProviders } from '@/contexts/AppProviders';
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -18,9 +19,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={`${jakarta.className} bg-gray-950 text-gray-100 antialiased selection:bg-blue-600 selection:text-white`}>
-        {children}
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${jakarta.className} bg-zinc-50 text-zinc-950 antialiased selection:bg-blue-600 selection:text-white dark:bg-gray-950 dark:text-gray-100`}>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

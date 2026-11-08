@@ -1,0 +1,3 @@
+import { SalesChart as Chart } from '@/features/statistics/components/SalesChart';
+import type { Sale } from '@/features/sales/types/sales.types';
+export function SalesChart({ sales }: { sales: Sale[] }) { const grouped = new Map<string, { fecha: string; ventas: number; ingresos: number }>(); for (const sale of sales) { const fecha = sale.fechaVenta.slice(0, 10); const point = grouped.get(fecha) ?? { fecha, ventas: 0, ingresos: 0 }; point.ventas++; point.ingresos += sale.precioPagado; grouped.set(fecha, point); } return <Chart data={Array.from(grouped.values()).sort((a, b) => a.fecha.localeCompare(b.fecha))} />; }

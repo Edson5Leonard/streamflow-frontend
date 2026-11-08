@@ -1,88 +1,48 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { fetchApi } from '@/lib/api';
-import { CredentialCard } from '@/components/client/CredentialCard';
+import { useState } from 'react';
+import { PurchaseHistory } from '@/features/sales/components/PurchaseHistory';
+import { useMyOrders } from '@/features/payments/hooks/useMyOrders';
+import { PaymentStatusBadge } from '@/features/payments/components/PaymentStatusBadge';
+import type { PaymentStatus } from '@/features/payments/types/payments.types';
+import { formatCurrency } from '@/utils/format-currency';
+import { formatDate } from '@/utils/format-date';
+import { LoadingState } from '@/components/feedback/LoadingState';
+import { ErrorState } from '@/components/feedback/ErrorState';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { SlideIn } from '@/components/animation/SlideIn';
+import { BuyerCover } from '../componentes/BuyerCover';
 
-interface CuentaAdquirida {
-  id: string;
-  servicio: string;
-  correo: string;
-  password: string;
-  perfilPin: string | null;
-  fechaVenta: string;
-}
-
-interface PedidoComprador {
-  id: string;
-  servicio: string;
-  monto: number;
-  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
-  motivoRechazo: string | null;
-  fechaSolicitud: string;
-}
-
-export default function HistorialCompradorPage() {
-  const [cuentas, setCuentas] = useState<CuentaAdquirida[]>([]);
-  const [pedidos, setPedidos] = useState<PedidoComprador[]>([]);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    Promise.all([
-      fetchApi<CuentaAdquirida[]>('/ventas/mis-compras'),
-      fetchApi<PedidoComprador[]>('/pagos/mis-pedidos'),
-    ])
-      .then(([compras, pedidosComprador]) => {
-        setCuentas(compras);
-        setPedidos(pedidosComprador);
-      })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se pudo cargar el historial.'));
-  }, []);
-
+const filters = { TODOS: 'Todos', PENDIENTE: 'Pendientes', APROBADO: 'Aprobados', RECHAZADO: 'Rechazados' } as const;
+export default function BuyerHistory() {
+  const orders = useMyOrders();
+  const [status, setStatus] = useState<PaymentStatus | 'TODOS'>('TODOS');
+  const visible = (orders.data ?? []).filter(order => status === 'TODOS' || order.estado === status)
+    .sort((a,b) => Date.parse(b.fechaSolicitud) - Date.parse(a.fechaSolicitud));
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold text-white">Mis Cuentas Adquiridas</h1>
-        <p className="text-gray-400 text-sm mt-1">Consulta tus credenciales de acceso activas.</p>
-      </div>
-
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
-
-      {pedidos.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-bold text-white">Pedidos y pagos</h2>
-          {pedidos.map((pedido) => (
-            <article key={pedido.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
-              <div>
-                <p className="font-semibold text-white">{pedido.servicio} · S/ {Number(pedido.monto).toFixed(2)}</p>
-                <p className="mt-1 text-xs text-gray-400">Pedido {pedido.id} · {new Date(pedido.fechaSolicitud).toLocaleString()}</p>
-                {pedido.estado === 'PENDIENTE' && <p className="mt-1 text-sm text-amber-300">Comprobante recibido; esperando la validación del distribuidor.</p>}
-                {pedido.estado === 'RECHAZADO' && <p className="mt-1 text-sm text-red-300">Pago rechazado: {pedido.motivoRechazo ?? 'Comunícate con el distribuidor.'}</p>}
-              </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${pedido.estado === 'PENDIENTE' ? 'bg-amber-950 text-amber-300' : pedido.estado === 'RECHAZADO' ? 'bg-red-950 text-red-300' : 'bg-emerald-950 text-emerald-300'}`}>
-                {pedido.estado === 'PENDIENTE' ? 'En revisión' : pedido.estado === 'RECHAZADO' ? 'Rechazado' : 'Aprobado'}
-              </span>
-            </article>
+    <div className="sf-buyer-stack">
+      <BuyerCover view="history" title="Mis compras" description="Consulta la revisión de tus pagos y los datos de los servicios que ya recibiste.">
+        <a className="sf-buyer-primary" href="#entregas">Ver servicios entregados ↓</a>
+      </BuyerCover>
+      <section id="pedidos" className="sf-buyer-panel scroll-mt-24">
+        <h2>Pedidos y pagos</h2>
+        <div className="sf-buyer-filters" aria-label="Filtrar pedidos por estado">
+          {(Object.keys(filters) as (keyof typeof filters)[]).map(key => (
+            <button key={key} aria-pressed={status === key} onClick={() => setStatus(key)}>{filters[key]}</button>
           ))}
-        </section>
-      )}
-
-      {!error && cuentas.length === 0 && pedidos.length === 0 && <p className="text-sm text-gray-400">Aún no tienes compras ni pedidos registrados.</p>}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cuentas.map((c) => {
-          return (
-            <CredentialCard
-              key={c.id}
-              servicio={c.servicio}
-              correo={c.correo}
-              password={c.password}
-              perfilPin={c.perfilPin}
-              fecha={c.fechaVenta}
-            />
-          );
-        })}
-      </div>
+        </div>
+        {orders.isLoading ? <LoadingState /> : orders.error ? <ErrorState description={orders.error.message} onRetry={() => void orders.refetch()} /> :
+          visible.length ? visible.map((order,index) => (
+            <SlideIn key={order.id} delay={Math.min(index,3) * .04} className="sf-buyer-order">
+              <div><strong>{order.servicio}</strong><small>{formatDate(order.fechaSolicitud)} · {order.id.slice(0,8)}</small></div>
+              <b>{formatCurrency(order.monto)}</b><PaymentStatusBadge status={order.estado} />
+              {order.motivoRechazo && <p>Motivo del rechazo: {order.motivoRechazo}</p>}
+            </SlideIn>
+          )) : <EmptyState title={status === 'TODOS' ? 'Aún no tienes pedidos registrados' : 'No hay pedidos con este estado'} />}
+      </section>
+      <section id="entregas" className="scroll-mt-24 space-y-4">
+        <h2>Servicios entregados</h2><PurchaseHistory />
+      </section>
     </div>
   );
 }

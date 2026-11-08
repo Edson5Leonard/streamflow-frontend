@@ -1,0 +1,3 @@
+import { z } from 'zod';
+export const replenishmentSchema = z.object({ servicioId: z.string().uuid('Selecciona un servicio.'), unidades: z.number().int().min(1).max(500) });
+export const replenishmentPaymentSchema = z.object({ id: z.string().uuid(), metodoPago: z.enum(['YAPE', 'PLIN', 'BCP', 'INTERBANK', 'INTERNACIONAL']), codigoOperacion: z.string().trim().max(100).optional(), comprobante: z.file().max(5 * 1024 * 1024, 'El comprobante no debe superar 5 MB.').mime(['image/png', 'image/jpeg', 'application/pdf']) }).refine((input) => input.metodoPago === 'INTERNACIONAL' || Boolean(input.codigoOperacion), { path: ['codigoOperacion'], message: 'El código de operación es obligatorio.' });

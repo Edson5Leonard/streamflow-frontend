@@ -1,256 +1,29 @@
 'use client';
-
-import { useCallback, useEffect, useState } from 'react';
-import { fetchApi } from '@/lib/api';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
-
-interface Distribuidor {
-  id: string;
-  nombreCompleto: string;
-  correo: string;
-  whatsapp: string | null;
-  activo: boolean;
-}
-
-export default function DistribuidoresPage() {
-  const [distribuidores, setDistribuidores] = useState<Distribuidor[]>([]);
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [error, setError] = useState('');
-  const [guardando, setGuardando] = useState(false);
-  const [distribuidorSeleccionado, setDistribuidorSeleccionado] = useState<Distribuidor | null>(null);
-  const [actualizandoEstado, setActualizandoEstado] = useState(false);
-  const [editando, setEditando] = useState<Distribuidor | null>(null);
-
-  const cargarDistribuidores = useCallback(async () => {
-    setDistribuidores(await fetchApi<Distribuidor[]>('/usuarios/distribuidores'));
-  }, []);
-
-  useEffect(() => {
-    Promise.resolve()
-      .then(cargarDistribuidores)
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'No se pudieron cargar los distribuidores.'));
-  }, [cargarDistribuidores]);
-
-  const handleGuardar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setGuardando(true);
-    try {
-      const datos: Record<string, string> = {
-          nombreCompleto: nombre,
-          correo: email,
-          whatsapp: telefono,
-      };
-      if (password) datos.password = password;
-      if (editando) {
-        await fetchApi(`/usuarios/${editando.id}`, { method: 'PUT', body: JSON.stringify(datos) });
-      } else {
-        await fetchApi('/usuarios/distribuidores', {
-          method: 'POST',
-          body: JSON.stringify({ ...datos, password }),
-        });
-      }
-      await cargarDistribuidores();
-      setNombre('');
-      setEmail('');
-      setPassword('');
-      setTelefono('');
-      setEditando(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar el distribuidor.');
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  const iniciarEdicion = (distribuidor: Distribuidor) => {
-    setEditando(distribuidor);
-    setNombre(distribuidor.nombreCompleto);
-    setEmail(distribuidor.correo);
-    setTelefono(distribuidor.whatsapp ?? '');
-    setPassword('');
-    document.getElementById('form-distribuidor')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleToggleEstado = (distribuidor: Distribuidor) => {
-    setDistribuidorSeleccionado(distribuidor);
-  };
-
-  const confirmarEstado = async () => {
-    if (!distribuidorSeleccionado) return;
-    setError('');
-    setActualizandoEstado(true);
-    try {
-      const actualizado = await fetchApi<Distribuidor>(`/usuarios/${distribuidorSeleccionado.id}/estado`, {
-        method: 'PATCH',
-        body: JSON.stringify({ activo: !distribuidorSeleccionado.activo }),
-      });
-      setDistribuidores((actuales) => actuales.map((actual) =>
-        actual.id === actualizado.id ? actualizado : actual));
-      setDistribuidorSeleccionado(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo actualizar el estado.');
-    } finally {
-      setActualizandoEstado(false);
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold text-white">Gestión de Distribuidores</h1>
-        <p className="text-gray-400 text-sm mt-1">
-          Crea tiendas independientes y comparte su enlace de registro con cada distribuidor.
-        </p>
-      </div>
-
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
-
-      {/* Formulario Crear / Editar */}
-      <form id="form-distribuidor" onSubmit={handleGuardar} className="bg-gray-900 border border-gray-800 p-6 rounded-2xl space-y-4 shadow-xl">
-        <h2 className="text-lg font-bold text-blue-400">
-          {editando ? 'Editar distribuidor' : 'Registrar nuevo distribuidor'}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Nombre / Empresa</label>
-            <input
-              type="text"
-              placeholder="Ej: Distribuidor Norte"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-              className="w-full p-3 bg-gray-950 border border-gray-800 rounded-xl text-white text-sm focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Correo Electrónico</label>
-            <input
-              type="email"
-              placeholder="distribuidor@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full p-3 bg-gray-950 border border-gray-800 rounded-xl text-white text-sm focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Teléfono / WhatsApp</label>
-            <input
-              type="text"
-              placeholder="999888777"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              required
-              className="w-full p-3 bg-gray-950 border border-gray-800 rounded-xl text-white text-sm focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Contraseña inicial</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required={!editando}
-              minLength={editando && password ? 8 : undefined}
-              placeholder={editando ? 'Dejar vacío para conservar' : ''}
-              className="w-full p-3 bg-gray-950 border border-gray-800 rounded-xl text-white text-sm focus:border-blue-500 focus:outline-none"
-            />
-          </div>
+import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usersService } from '@/features/users/services/users.service';
+import { useDistributors } from '@/features/users/hooks/useDistributors';
+import { UserTable } from '@/features/users/components/UserTable';
+import { UserForm } from '@/features/users/components/UserForm';
+import type { User } from '@/features/users/types/users.types';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { ErrorState } from '@/components/feedback/ErrorState';
+import { LoadingState } from '@/components/feedback/LoadingState';
+import { NetworkCover } from '../componentes/NetworkCover';
+import { FadeIn } from '@/components/animation/FadeIn';
+function CreateDistributor({ onDone }: { onDone: () => void }) { const client = useQueryClient(); const [error, setError] = useState(''); const mutation = useMutation({ mutationFn: usersService.createDistributor, onSuccess: async () => { await client.invalidateQueries({ queryKey: ['users'] }); onDone(); } }); async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setError(''); const data = new FormData(event.currentTarget); try { await mutation.mutateAsync({ nombreCompleto: String(data.get('nombre') ?? ''), correo: String(data.get('correo') ?? ''), password: String(data.get('password') ?? ''), whatsapp: String(data.get('whatsapp') ?? '') }); } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo crear el distribuidor.'); } } const input = 'mt-1 h-10 w-full rounded-xl border bg-background px-3'; return <form onSubmit={submit} className="space-y-4">{[{ name: 'nombre', label: 'Nombre', type: 'text' }, { name: 'correo', label: 'Correo', type: 'email' }, { name: 'password', label: 'Contraseña', type: 'password' }, { name: 'whatsapp', label: 'WhatsApp (opcional)', type: 'tel' }].map((item) => <label key={item.name} className="block text-sm">{item.label}<input name={item.name} type={item.type} required={item.name !== 'whatsapp'} className={input} /></label>)}{error && <p role="alert" className="text-sm text-red-500">{error}</p>}<button disabled={mutation.isPending} className="rounded-xl bg-violet-600 px-4 py-2 text-white disabled:opacity-50">{mutation.isPending ? 'Guardando...' : 'Crear distribuidor'}</button></form>; }
+export default function DistributorsPage() { const query = useDistributors(); const client = useQueryClient(); const change = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => usersService.setDistributorActive(id, active), onSuccess: () => client.invalidateQueries({ queryKey: ['users'] }) }); const [selected, setSelected] = useState<User | null>(null); const [creating, setCreating] = useState(false); const [confirm, setConfirm] = useState(false); const [activity, setActivity] = useState('todos');
+  const [search, setSearch] = useState(''); if (query.isLoading) return <LoadingState />; if (query.error) return <ErrorState description={query.error.message} onRetry={() => void query.refetch()} />; const users = (query.data ?? []).filter((user) => `${user.nombreCompleto} ${user.correo}`.toLowerCase().includes(search.trim().toLowerCase()) && (activity === 'todos' || user.activo === (activity === 'activos'))); async function toggle() { if (!selected) return; try { await change.mutateAsync({ id: selected.id, active: !selected.activo }); setSelected(null); } catch {} } return <FadeIn className="space-y-6"><NetworkCover title="Distribuidores" description="Administra las cuentas de las tiendas y consulta su estado de acceso." metric={query.data?.filter(user => user.activo).length ?? 0} label="distribuidores activos">
+        <button type="button" onClick={() => setCreating(true)} className="sf-network-action">Crear distribuidor</button>
+      </NetworkCover><section className="sf-network-panel">
+        <h2>Directorio de la red</h2>
+        <div className="sf-network-toolbar">
+          <select aria-label="Estado del distribuidor" value={activity} onChange={event => setActivity(event.target.value)}>
+            <option value="todos">Todos los estados</option><option value="activos">Activos</option><option value="suspendidos">Suspendidos</option>
+          </select>
+          <input aria-label="Buscar distribuidor" placeholder="Buscar nombre o correo" value={search} onChange={(event) => setSearch(event.target.value)} className="h-11 w-full max-w-sm rounded-xl border bg-background px-3 text-sm" />
         </div>
-
-        <button
-          type="submit"
-          disabled={guardando}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-blue-600/20"
-        >
-          {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar distribuidor'}
-        </button>
-        {editando && <button type="button" onClick={() => { setEditando(null); setNombre(''); setEmail(''); setPassword(''); setTelefono(''); }} className="w-full text-sm text-gray-400 hover:text-white">Cancelar edición</button>}
-      </form>
-
-      {/* Lista de Distribuidores */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-950 text-gray-400 font-semibold uppercase text-xs">
-              <tr>
-                <th className="p-4">Distribuidor</th>
-                <th className="p-4">Contacto</th>
-                <th className="p-4">Enlace de tienda</th>
-                <th className="p-4">Estado</th>
-                <th className="p-4 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800/60 text-gray-300">
-              {distribuidores.map((dist) => (
-                <tr key={dist.id} className="hover:bg-gray-800/40 transition">
-                  <td className="p-4 font-bold text-white">{dist.nombreCompleto}</td>
-                  <td className="p-4 text-xs">
-                    <p className="text-gray-300">{dist.correo}</p>
-                    <p className="text-gray-500">{dist.whatsapp}</p>
-                  </td>
-                  <td className="p-4 text-xs font-mono">
-                    <a className="text-blue-400 underline" href={`/tienda/${dist.id}`} target="_blank" rel="noreferrer">
-                      Abrir tienda
-                    </a>
-                    <p className="text-gray-500">{dist.id}</p>
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={`px-2.5 py-1 rounded-lg text-xs font-extrabold ${
-                        dist.activo
-                          ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                          : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                      }`}
-                    >
-                      {dist.activo ? 'ACTIVO' : 'DESACTIVADO'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right space-x-2">
-                    <button
-                      onClick={() => iniciarEdicion(dist)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 underline underline-offset-4 hover:text-white"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleToggleEstado(dist)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                        dist.activo
-                          ? 'bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20'
-                          : 'bg-green-600/10 hover:bg-green-600 text-green-400 hover:text-white border border-green-500/20'
-                      }`}
-                    >
-                      {dist.activo ? 'Desactivar' : 'Activar'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <ConfirmModal
-          open={Boolean(distribuidorSeleccionado)}
-          title={distribuidorSeleccionado?.activo ? 'Suspender distribuidor' : 'Reactivar distribuidor'}
-          description={distribuidorSeleccionado?.activo
-            ? 'Se bloqueará el acceso a la tienda hasta que se reactive.'
-            : 'El distribuidor volverá a tener acceso al panel.'}
-          confirmLabel={distribuidorSeleccionado?.activo ? 'Suspender acceso' : 'Reactivar acceso'}
-          destructive={Boolean(distribuidorSeleccionado?.activo)}
-          loading={actualizandoEstado}
-          onCancel={() => setDistribuidorSeleccionado(null)}
-          onConfirm={() => void confirmarEstado()}
-        />
-      </div>
-    </div>
-  );
-}
+        <UserTable users={users} onSelect={(user) => { setSelected(user); setConfirm(false); change.reset(); }} />
+      </section>
+      <Dialog open={creating} onOpenChange={setCreating}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogTitle>Nuevo distribuidor</DialogTitle><DialogDescription>Crea una cuenta para una tienda.</DialogDescription><CreateDistributor onDone={() => setCreating(false)} /></DialogContent></Dialog><Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg"><DialogTitle>Distribuidor</DialogTitle><DialogDescription>Gestiona los datos y el estado de la tienda.</DialogDescription>{selected && <><UserForm key={selected.id} user={selected} onSuccess={() => setSelected(null)} /><Link href={`/tiendas/${encodeURIComponent(selected.id)}`} target="_blank" className="text-sm text-violet-600 underline">Abrir tienda pública</Link><button type="button" onClick={() => setConfirm(true)} className="text-left text-sm text-violet-600 underline">{selected.activo ? 'Suspender' : 'Reactivar'} distribuidor</button>{confirm && <div className="space-y-2 rounded-xl bg-muted p-3"><p className="text-sm">¿Confirmas el cambio de estado?</p><button type="button" disabled={change.isPending} onClick={() => void toggle()} className="rounded-xl bg-violet-600 px-4 py-2 text-sm text-white">Confirmar</button></div>}{change.error && <p role="alert" className="text-sm text-red-500">{change.error.message}</p>}</>}</DialogContent></Dialog></FadeIn>; }

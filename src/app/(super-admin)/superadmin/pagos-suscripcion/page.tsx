@@ -1,152 +1,26 @@
 'use client';
-
-import { useEffect, useState } from 'react';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { ReceiptViewerModal } from '@/components/ui/ReceiptViewerModal';
-import { fetchApi, fetchApiBlob } from '@/lib/api';
-import type { MetodoPago } from '@/components/payments/PaymentInstructions';
-
-interface PagoMembresia {
-  id: string;
-  distribuidorId: string;
-  distribuidorNombre: string;
-  monto: number;
-  fechaSolicitud: string;
-  comprobanteUrl: string;
-  metodoPago: MetodoPago;
-  codigoOperacion: string | null;
-}
-
-type Accion = 'aprobar' | 'rechazar';
-
-export default function PagosSuscripcionPage() {
-  const [pagos, setPagos] = useState<PagoMembresia[]>([]);
-  const [seleccionado, setSeleccionado] = useState<{ pago: PagoMembresia; accion: Accion } | null>(null);
-  const [motivo, setMotivo] = useState('');
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState('');
-  const [comprobante, setComprobante] = useState<{ url: string; mimeType: string } | null>(null);
-
-  const cargar = async () => {
-    setPagos(await fetchApi<PagoMembresia[]>('/membresias/pendientes'));
-  };
-
-  useEffect(() => {
-    Promise.resolve().then(cargar).catch((err: unknown) =>
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las solicitudes.'));
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (comprobante) URL.revokeObjectURL(comprobante.url);
-    };
-  }, [comprobante]);
-
-  const verComprobante = async (pago: PagoMembresia) => {
-    try {
-      const nombre = pago.comprobanteUrl.split('/').pop();
-      if (!nombre) throw new Error('El pago no tiene un comprobante válido.');
-      const blob = await fetchApiBlob(`/membresias/comprobantes/${encodeURIComponent(nombre)}`);
-      setComprobante({ url: URL.createObjectURL(blob), mimeType: blob.type });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo abrir el comprobante.');
-    }
-  };
-
-  const confirmar = async () => {
-    if (!seleccionado) return;
-    setCargando(true);
-    setError('');
-    try {
-      await fetchApi(`/membresias/${seleccionado.pago.id}/${seleccionado.accion}`, {
-        method: 'PUT',
-        ...(seleccionado.accion === 'rechazar' ? { body: JSON.stringify({ motivo }) } : {}),
-      });
-      setPagos((actuales) => actuales.filter((pago) => pago.id !== seleccionado.pago.id));
-      setSeleccionado(null);
-      setMotivo('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo procesar la membresía.');
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Pagos de membresía</h1>
-        <p className="mt-1 text-sm text-slate-400">Verifica el comprobante bancario antes de extender 30 días el acceso del distribuidor.</p>
-      </header>
-      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-      {pagos.length === 0 && !error && <p className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400">No hay comprobantes pendientes.</p>}
-
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
-        <table className="w-full min-w-[700px] text-left text-sm">
-          <thead className="bg-slate-950/70 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="p-4">Distribuidor</th>
-              <th className="p-4">Monto / fecha</th>
-              <th className="p-4">Método / operación</th>
-              <th className="p-4">Comprobante</th>
-              <th className="p-4 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {pagos.map((pago) => (
-              <tr key={pago.id}>
-                <td className="p-4 font-medium text-slate-200">{pago.distribuidorNombre}</td>
-                <td className="p-4">
-                  <p className="font-semibold text-slate-100">S/ {Number(pago.monto).toFixed(2)}</p>
-                  <p className="mt-1 text-xs text-slate-500">{new Date(pago.fechaSolicitud).toLocaleString()}</p>
-                </td>
-                <td className="p-4">
-                  <p>{pago.metodoPago}</p>
-                  {pago.codigoOperacion && <p className="mt-1 text-xs text-slate-500">{pago.codigoOperacion}</p>}
-                </td>
-                <td className="p-4">
-                  <button type="button" onClick={() => void verComprobante(pago)} className="text-xs font-medium text-slate-300 underline underline-offset-4 hover:text-white">Ver captura</button>
-                </td>
-                <td className="space-x-2 p-4 text-right">
-                  <button type="button" onClick={() => setSeleccionado({ pago, accion: 'aprobar' })} className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600">Aprobar 30 días</button>
-                  <button type="button" onClick={() => { setMotivo(''); setSeleccionado({ pago, accion: 'rechazar' }); }} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:border-red-900 hover:text-red-300">Rechazar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <ConfirmModal
-        open={seleccionado?.accion === 'aprobar'}
-        title="Aprobar membresía"
-        description="Se activará la tienda y se extenderá su membresía por 30 días desde su vencimiento actual o desde hoy."
-        confirmLabel="Aprobar membresía"
-        loading={cargando}
-        onCancel={() => setSeleccionado(null)}
-        onConfirm={() => void confirmar()}
-      />
-      <ConfirmModal
-        open={seleccionado?.accion === 'rechazar'}
-        title="Rechazar comprobante"
-        description="El distribuidor conservará su estado actual. Indica un motivo claro para la corrección."
-        confirmLabel="Rechazar pago"
-        destructive
-        loading={cargando}
-        onCancel={() => setSeleccionado(null)}
-        onConfirm={() => void confirmar()}
-      >
-        <label className="block space-y-2 text-sm text-slate-300">
-          <span>Motivo</span>
-          <textarea required maxLength={500} value={motivo} onChange={(event) => setMotivo(event.target.value)} className="min-h-24 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white" />
-        </label>
-      </ConfirmModal>
-      <ReceiptViewerModal
-        open={Boolean(comprobante)}
-        src={comprobante?.url ?? null}
-        mimeType={comprobante?.mimeType}
-        onClose={() => setComprobante(null)}
-      />
-    </div>
-  );
-}
+import { useState } from 'react';
+import { useMemberships } from '@/features/memberships/hooks/useMemberships';
+import { useApproveMembership } from '@/features/memberships/hooks/useApproveMembership';
+import { useRejectMembership } from '@/features/memberships/hooks/useRejectMembership';
+import { membershipsService } from '@/features/memberships/services/memberships.service';
+import { MembershipTable } from '@/features/memberships/components/MembershipTable';
+import type { Membership } from '@/features/memberships/types/memberships.types';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { ErrorState } from '@/components/feedback/ErrorState';
+import { LoadingState } from '@/components/feedback/LoadingState';
+import { NetworkCover } from '../componentes/NetworkCover';
+import { FadeIn } from '@/components/animation/FadeIn';
+import { OpenVoucher } from '../componentes/OpenVoucher';
+export default function MembershipPayments() { const payments = useMemberships(); const approve = useApproveMembership(); const reject = useRejectMembership(); const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Membership | null>(null); const [action, setAction] = useState<'approve' | 'reject' | null>(null); const [reason, setReason] = useState(''); const [error, setError] = useState(''); const [message, setMessage] = useState(''); if (payments.isLoading) return <LoadingState />; if (payments.error) return <ErrorState description={payments.error.message} onRetry={() => void payments.refetch()} />; async function submit() { if (!selected || !action) return; setError(''); if (action === 'reject' && !reason.trim()) { setError('Indica el motivo del rechazo.'); return; } try { if (action === 'approve') await approve.mutateAsync(selected.id); else await reject.mutateAsync({ id: selected.id, motivo: reason }); setSelected(null); setMessage('Solicitud procesada.'); } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo procesar el pago.'); } } return <FadeIn className="space-y-6"><NetworkCover title="Pagos de membresía" description="Verifica el comprobante de cada distribuidor antes de aprobar o rechazar su renovación." metric={payments.data?.length ?? 0} label="renovaciones pendientes" />{message && <p role="status" className="text-sm text-emerald-600">{message}</p>}<section className="sf-network-panel">
+        <h2>Solicitudes de renovación</h2>
+        <div className="sf-network-toolbar">
+          <input aria-label="Buscar renovación" placeholder="Buscar por distribuidor o código de operación"
+            value={search} onChange={event => setSearch(event.target.value)} />
+        </div>
+        <MembershipTable memberships={(payments.data ?? []).filter(item =>
+          [item.distribuidorNombre, item.codigoOperacion].join(' ').toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es'))
+        ).sort((a,b) => a.fechaSolicitud.localeCompare(b.fechaSolicitud))} onSelect={(item) => { setSelected(item); setAction(null); setReason(''); setError(''); }} />
+      </section>
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}><DialogContent><DialogTitle>Pago de membresía</DialogTitle><DialogDescription>{selected?.distribuidorNombre} · {selected?.metodoPago}</DialogDescription>{selected && <><p className="text-sm">Código: {selected.codigoOperacion || 'No indicado'}</p><OpenVoucher load={() => membershipsService.voucher(selected.comprobanteUrl)} /><div className="flex gap-2"><button onClick={() => setAction('approve')} className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white">Aprobar</button><button onClick={() => setAction('reject')} className="rounded-xl border px-3 py-2 text-sm">Rechazar</button></div>{action && <div className="space-y-3 rounded-xl bg-muted p-3"><p className="text-sm">{action === 'approve' ? '¿Confirmas la aprobación de este pago?' : 'Indica el motivo del rechazo.'}</p>{action === 'reject' && <textarea aria-label="Motivo del rechazo" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} className="w-full rounded-lg border bg-background p-2 text-sm" />}<button disabled={approve.isPending || reject.isPending} onClick={() => void submit()} className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white">Confirmar</button></div>}{error && <p role="alert" className="text-sm text-red-500">{error}</p>}</>}</DialogContent></Dialog></FadeIn>; }

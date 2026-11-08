@@ -1,0 +1,4 @@
+import { z } from 'zod';
+export const paymentSchema = z.object({ servicioId: z.string().uuid('Selecciona un servicio válido.'), metodoPago: z.enum(['YAPE', 'PLIN', 'BCP', 'INTERBANK', 'INTERNACIONAL']), codigoOperacion: z.string().trim().max(100).optional(), comprobante: z.file().max(5 * 1024 * 1024, 'El comprobante no debe superar 5 MB.').mime(['image/png', 'image/jpeg', 'application/pdf'], 'Adjunta un archivo PNG, JPG o PDF.') });
+export const publicPaymentSchema = paymentSchema.extend({ distribuidorId: z.string().uuid(), nombreCompleto: z.string().trim().min(2, 'Ingresa tu nombre completo.'), whatsapp: z.string().trim().min(6, 'Ingresa tu WhatsApp.') });
+export const rejectPaymentSchema = z.object({ id: z.string().uuid(), motivo: z.string().trim().min(1, 'Ingresa el motivo del rechazo.').max(500) });

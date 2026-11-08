@@ -1,0 +1,6 @@
+'use client';
+import { motion, useReducedMotion } from 'motion/react';
+import { ArrowUpRight, UserRound } from 'lucide-react';
+import type { User } from '../types/users.types';
+import { UserStatusBadge } from './UserStatusBadge';
+export function UserCard({ user, onSelect }: { user: User; onSelect?: (user: User) => void }) { const reduced = useReducedMotion(); return <motion.article whileHover={reduced ? undefined : { y: -3 }} transition={{ duration: 0.22 }} className="rounded-2xl border bg-card p-5 shadow-sm"><div className="flex items-start justify-between"><span className="grid size-11 place-items-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300"><UserRound size={20} /></span><UserStatusBadge active={user.activo} /></div><h3 className="mt-4 font-bold">{user.nombreCompleto}</h3><p className="mt-1 break-all text-sm text-muted-foreground">{user.correo}</p>{user.whatsapp && <p className="mt-1 text-xs text-muted-foreground">{user.whatsapp}</p>}{onSelect && <button type="button" onClick={() => onSelect(user)} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-violet-600 hover:underline dark:text-violet-300">Ver usuario <ArrowUpRight size={15} /></button>}</motion.article>; }

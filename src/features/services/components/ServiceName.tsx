@@ -1,0 +1,1 @@
+export function ServiceName({ name, category }: { name: string; category?: string }) { return <div><p className="font-medium">{name}</p>{category && <p className="text-xs text-muted-foreground">{category}</p>}</div>; }

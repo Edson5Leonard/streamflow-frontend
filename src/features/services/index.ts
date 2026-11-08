@@ -1,0 +1,11 @@
+export { servicesService } from './services/services.service';
+export type { Service } from './types/services.types';
+export type { CreateServiceInput, UpdateServicePriceInput } from './types/services.types';
+export { ServiceCard } from './components/ServiceCard';
+export { ServiceTable } from './components/ServiceTable';
+export { ServiceForm } from './components/ServiceForm';
+export { ServiceCategoryBadge } from './components/ServiceCategoryBadge';
+export { useServices } from './hooks/useServices';
+export { useActiveServices } from './hooks/useActiveServices';
+export { useCreateService } from './hooks/useCreateService';
+export { useUpdateServicePrice } from './hooks/useUpdateServicePrice';

@@ -1,0 +1,6 @@
+import { CreditCard } from 'lucide-react';
+import { formatCurrency } from '@/utils/format-currency';
+import { formatDate } from '@/utils/format-date';
+import type { Payment } from '../types/payments.types';
+import { PaymentStatusBadge } from './PaymentStatusBadge';
+export function PaymentCard({ payment, onSelect }: { payment: Payment; onSelect?: (payment: Payment) => void }) { return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-lg dark:border-white/10 dark:bg-slate-900"><div className="flex items-start justify-between"><span className="grid size-10 place-items-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300"><CreditCard size={19} /></span><PaymentStatusBadge status={payment.estado} /></div><p className="mt-4 text-xs text-slate-500">Pago · {payment.metodoPago}</p><p className="mt-1 text-xl font-bold">{formatCurrency(payment.monto)}</p><p className="mt-2 text-xs text-slate-500">{formatDate(payment.fechaSolicitud)}</p>{payment.motivoRechazo && <p className="mt-2 text-xs text-red-500">{payment.motivoRechazo}</p>}{onSelect && <button type="button" onClick={() => onSelect(payment)} className="mt-4 text-sm font-semibold text-violet-600 hover:underline dark:text-violet-400">Ver detalle →</button>}</article>; }

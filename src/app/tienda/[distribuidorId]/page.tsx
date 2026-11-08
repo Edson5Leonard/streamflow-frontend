@@ -6,5 +6,5 @@ export default async function TiendaPublicaPage({
   params: Promise<{ distribuidorId: string }>;
 }) {
   const { distribuidorId } = await params;
-  redirect(`/?distribuidorId=${encodeURIComponent(distribuidorId)}#catalogo`);
+  redirect(`/tiendas/${encodeURIComponent(distribuidorId)}`);
 }

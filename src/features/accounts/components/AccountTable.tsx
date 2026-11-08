@@ -1,0 +1,6 @@
+'use client';
+import { DataTable, type DataTableColumn } from '@/components/data-display/DataTable';
+import { formatCurrency } from '@/utils/format-currency';
+import type { Account } from '../types/accounts.types';
+import { AccountStatusBadge } from './AccountStatusBadge';
+export function AccountTable({ accounts, serviceNames = {}, onSelect }: { accounts: Account[]; serviceNames?: Record<string, string>; onSelect?: (account: Account) => void }) { const columns: DataTableColumn<Account>[] = [{ id: 'service', header: 'Servicio', cell: (item) => serviceNames[item.servicioId] ?? item.servicioId }, { id: 'email', header: 'Correo', cell: (item) => item.correo }, { id: 'type', header: 'Tipo', cell: (item) => item.tipoStock }, { id: 'price', header: 'Precio', cell: (item) => item.precioVenta == null ? 'Sin configurar' : formatCurrency(item.precioVenta) }, { id: 'state', header: 'Estado', cell: (item) => <AccountStatusBadge status={item.estado} /> }]; if (onSelect) columns.push({ id: 'action', header: 'Acción', cell: (item) => <button type="button" onClick={() => onSelect(item)} className="font-semibold text-violet-600 hover:underline">Ver cuenta</button> }); return <DataTable columns={columns} data={accounts} getRowId={(item) => item.id} emptyTitle="No hay cuentas en el inventario" />; }

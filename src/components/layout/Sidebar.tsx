@@ -1,104 +1,34 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  ShieldCheck, 
-  Package, 
-  ClipboardCheck, 
-  ShoppingBag, 
-  History, 
-  HelpCircle,
-  Tv
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { RoleNavigation } from '@/components/navigation/RoleNavigation';
+import { StreamFlowBrand } from '@/components/navigation/StreamFlowBrand';
+import { useSidebar } from '@/contexts/SidebarProvider';
+import { handleLogout } from '@/lib/auth';
+import type { UserRole } from '@/constants/roles.constants';
 
-export function Sidebar() {
-  const pathname = usePathname();
+export const workspaceLabels: Record<UserRole, string> = {
+  COMPRADOR: 'Espacio personal', DISTRIBUIDOR: 'Gestión de tienda', SUPER_ADMIN: 'Administración global',
+};
 
-  const adminLinks = [
-    { href: '/admin/pedidos', label: 'Pedidos pendientes', icon: ShieldCheck },
-    { href: '/admin/inventario', label: 'Gestión Inventario', icon: Package },
-    { href: '/admin/auditoria', label: 'Auditoría Nocturna', icon: ClipboardCheck },
-  ];
-
-  const clientLinks = [
-    { href: '/dashboard/catalogo', label: 'Catálogo Cuentas', icon: ShoppingBag },
-    { href: '/dashboard/historial', label: 'Mis Compras / Reclamos', icon: History },
-    { href: '/dashboard/soporte', label: 'Soporte y Ayuda', icon: HelpCircle },
-  ];
-
+export function Sidebar({ role }: { role: UserRole }) {
+  const { isOpen, toggle } = useSidebar();
   return (
-    <aside className="w-64 bg-slate-900 text-slate-100 min-h-screen p-4 flex flex-col justify-between border-r border-slate-800">
-      <div className="space-y-6">
-        {/* Brand Header */}
-        <div className="flex items-center gap-3 px-2 py-3 border-b border-slate-800">
-          <div className="bg-indigo-600 p-2 rounded-lg text-white">
-            <Tv className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="font-bold text-base leading-none text-white">StreamManager</h2>
-            <span className="text-xs text-slate-400">Panel de Control</span>
-          </div>
-        </div>
-
-        {/* Módulo Administrador */}
-        <div>
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Administración
-          </p>
-          <nav className="space-y-1">
-            {adminLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
-                    isActive
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Módulo Cliente / Revendedor */}
-        <div>
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Portal Revendedor
-          </p>
-          <nav className="space-y-1">
-            {clientLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+    <aside className="sf-side hidden md:flex" data-expanded={isOpen} aria-label="Panel lateral">
+      <div className="sf-side-brand">
+        <StreamFlowBrand compact={!isOpen} />
+        {isOpen && <button type="button" className="sf-rail-button" aria-label="Contraer barra lateral" onClick={toggle}><PanelLeftClose size={17} /></button>}
       </div>
-
+      <div className="sf-side-scroll">
+        {isOpen ? <div className="sf-workspace"><span>{workspaceLabels[role]}</span></div> :
+          <button type="button" className="sf-rail-button" aria-label="Expandir barra lateral" onClick={toggle}><PanelLeftOpen size={18} /></button>}
+        <RoleNavigation role={role} collapsed={!isOpen} />
+      </div>
+      <div className="sf-side-bottom">
+        <button type="button" className="sf-logout" onClick={handleLogout} title="Cerrar sesión">
+          <LogOut size={18} /><span className={!isOpen ? 'sr-only' : undefined}>Cerrar sesión</span>
+        </button>
+      </div>
     </aside>
   );
 }

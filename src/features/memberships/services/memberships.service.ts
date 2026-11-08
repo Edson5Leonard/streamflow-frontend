@@ -1,0 +1,25 @@
+import { env } from '@/config/env';
+import { membershipsApi } from '../api/memberships.api';
+import { membershipsMock } from '../mocks/memberships.mock';
+import { membershipPaymentSchema, membershipRejectSchema } from '../schemas/membership.schema';
+import { authService } from '@/features/auth/services/auth.service';
+import { MEMBERSHIP_AMOUNT } from '../constants/memberships.constants';
+import { addDays, format, parseISO, startOfDay } from 'date-fns';
+import Cookies from 'js-cookie';
+import type { Membership, MembershipPaymentInput } from '../types/memberships.types';
+
+type MockMembership = Membership & { voucherData?: string };
+const key = 'streamflow:mock-memberships:v1';
+function read(): MockMembership[] { try { return JSON.parse(localStorage.getItem(key) ?? JSON.stringify(membershipsMock)) as MockMembership[]; } catch { return []; } }
+function save(items: MockMembership[]) { localStorage.setItem(key, JSON.stringify(items)); }
+function role(expected: string) { if (Cookies.get('role') !== expected) throw new Error('No tienes permiso para esta operación.'); }
+function find(items: MockMembership[], id: string) { const item = items.find((entry) => entry.id === id); if (!item) throw new Error('La solicitud de membresía no existe.'); return item; }
+function encode(file: File): Promise<string> { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error('No se pudo leer el comprobante.')); reader.readAsDataURL(file); }); }
+export const membershipsService = {
+  async listMine() { if (!env.useMocks) return membershipsApi.listMine(); role('DISTRIBUIDOR'); return read().filter((item) => item.distribuidorId === Cookies.get('usuarioId')).sort((a, b) => b.fechaSolicitud.localeCompare(a.fechaSolicitud)); },
+  async listPending() { if (!env.useMocks) return membershipsApi.listPending(); role('SUPER_ADMIN'); return read().filter((item) => item.estado === 'PENDIENTE').sort((a, b) => a.fechaSolicitud.localeCompare(b.fechaSolicitud)); },
+  async create(input: MembershipPaymentInput) { const valid = membershipPaymentSchema.parse(input); if (!env.useMocks) return membershipsApi.create(valid); role('DISTRIBUIDOR'); const profile = await authService.getProfile(); if (read().some((item) => item.distribuidorId === profile.usuarioId && item.estado === 'PENDIENTE')) throw new Error('Ya tienes una solicitud pendiente de revisión.'); const voucherData = await encode(valid.comprobante); const items = read(); if (items.some((item) => item.distribuidorId === profile.usuarioId && item.estado === 'PENDIENTE')) throw new Error('Ya tienes una solicitud pendiente de revisión.'); const id = crypto.randomUUID(); const item: MockMembership = { id, distribuidorId: profile.usuarioId, distribuidorNombre: profile.nombreCompleto, monto: MEMBERSHIP_AMOUNT, comprobanteUrl: `mock:${id}`, metodoPago: valid.metodoPago, codigoOperacion: valid.codigoOperacion || null, estado: 'PENDIENTE', motivoRechazo: null, fechaVencimiento: null, fechaSolicitud: new Date().toISOString(), voucherData }; items.push(item); save(items); return item; },
+  async approve(id: string) { if (!env.useMocks) return membershipsApi.approve(id); role('SUPER_ADMIN'); const items = read(); const item = find(items, id); if (item.estado !== 'PENDIENTE') throw new Error('La solicitud ya fue procesada.'); const user = authService.getMockUsers().find((entry) => entry.id === item.distribuidorId && entry.role === 'DISTRIBUIDOR'); if (!user) throw new Error('No se encontró al distribuidor.'); const today = startOfDay(new Date()); const expiry = user.membresiaHasta ? parseISO(user.membresiaHasta) : today; const base = expiry > today ? expiry : today; const fechaVencimiento = format(addDays(base, 30), 'yyyy-MM-dd'); authService.saveMockUser({ ...user, membresiaHasta: fechaVencimiento, activo: true }); item.estado = 'APROBADO'; item.fechaVencimiento = fechaVencimiento; save(items); return item; },
+  async reject(id: string, motivo: string) { const valid = membershipRejectSchema.parse({ id, motivo }); if (!env.useMocks) return membershipsApi.reject(valid.id, valid.motivo); role('SUPER_ADMIN'); const items = read(); const item = find(items, id); if (item.estado !== 'PENDIENTE') throw new Error('La solicitud ya fue procesada.'); item.estado = 'RECHAZADO'; item.motivoRechazo = valid.motivo; save(items); return item; },
+  async voucher(url: string) { if (!env.useMocks) { const name = url.split('/').pop(); if (!name) throw new Error('El comprobante no es válido.'); return membershipsApi.voucher(name); } const item = read().find((entry) => entry.comprobanteUrl === url); if (!item || (Cookies.get('role') !== 'SUPER_ADMIN' && !(Cookies.get('role') === 'DISTRIBUIDOR' && Cookies.get('usuarioId') === item.distribuidorId))) throw new Error('No tienes permiso para ver este comprobante.'); if (!item.voucherData) throw new Error('El comprobante no está disponible.'); return (await fetch(item.voucherData)).blob(); },
+};

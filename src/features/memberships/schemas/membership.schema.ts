@@ -1,0 +1,3 @@
+import { z } from 'zod';
+export const membershipPaymentSchema = z.object({ metodoPago: z.enum(['YAPE', 'PLIN', 'BCP', 'INTERBANK', 'INTERNACIONAL']), codigoOperacion: z.string().trim().max(100).optional(), comprobante: z.file().min(1, 'Adjunta el comprobante.').max(5 * 1024 * 1024, 'El archivo supera 5 MB.').mime(['image/png', 'image/jpeg', 'image/webp', 'application/pdf'], 'Usa PNG, JPG, WebP o PDF.') }).refine((input) => input.metodoPago === 'INTERNACIONAL' || Boolean(input.codigoOperacion), { path: ['codigoOperacion'], message: 'El código de operación es obligatorio.' });
+export const membershipRejectSchema = z.object({ id: z.string().uuid(), motivo: z.string().trim().min(1, 'Indica el motivo del rechazo.').max(500) });

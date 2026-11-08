@@ -1,0 +1,5 @@
+'use client';
+import { DataTable, type DataTableColumn } from '@/components/data-display/DataTable';
+import type { User } from '../types/users.types';
+import { UserStatusBadge } from './UserStatusBadge';
+export function UserTable({ users, onSelect }: { users: User[]; onSelect?: (user: User) => void }) { const columns: DataTableColumn<User>[] = [{ id: 'name', header: 'Nombre', cell: (user) => <span className="font-semibold">{user.nombreCompleto}</span> }, { id: 'email', header: 'Correo', cell: (user) => user.correo }, { id: 'whatsapp', header: 'WhatsApp', cell: (user) => user.whatsapp || '—' }, { id: 'status', header: 'Estado', cell: (user) => <UserStatusBadge active={user.activo} /> }]; if (onSelect) columns.push({ id: 'actions', header: 'Acción', cell: (user) => <button type="button" onClick={() => onSelect(user)} className="font-semibold text-violet-600 hover:underline dark:text-violet-300">Ver usuario</button> }); return <DataTable columns={columns} data={users} getRowId={(user) => user.id} emptyTitle="No hay usuarios" />; }

@@ -1,0 +1,10 @@
+export { statisticsService } from './services/statistics.service';
+export type { DistributorStatistics, GlobalStatistics, StatisticsRange, SalesPoint, InventoryPoint } from './types/statistics.types';
+export { useDistributorStatistics } from './hooks/useDistributorStatistics';
+export { useGlobalStatistics } from './hooks/useGlobalStatistics';
+export { StatisticsCards } from './components/StatisticsCards';
+export { SalesChart } from './components/SalesChart';
+export { RevenueChart } from './components/RevenueChart';
+export { InventoryChart } from './components/InventoryChart';
+export { StatisticsFilters } from './components/StatisticsFilters';
+export { buildSalesSeries, buildInventorySeries } from './utils/statistics.utils';

@@ -1,0 +1,6 @@
+'use client';
+import { motion, useReducedMotion } from 'motion/react';
+import { KeyRound } from 'lucide-react';
+import type { Account } from '../types/accounts.types';
+import { AccountStatusBadge } from './AccountStatusBadge';
+export function AccountCard({ account, serviceName, onSelect }: { account: Account; serviceName?: string; onSelect?: (account: Account) => void }) { const reduced = useReducedMotion(); return <motion.article whileHover={reduced ? undefined : { y: -3 }} transition={{ duration: 0.22 }} className="rounded-2xl border bg-card p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><span className="grid size-11 place-items-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300"><KeyRound size={20} /></span><AccountStatusBadge status={account.estado} /></div><h3 className="mt-4 font-bold">{serviceName ?? 'Cuenta de servicio'}</h3><p className="mt-1 break-all text-sm text-muted-foreground">{account.correo}</p><p className="mt-2 text-xs text-muted-foreground">{account.tipoStock === 'GARANTIA' ? 'Garantía' : 'Venta'}</p>{onSelect && <button type="button" onClick={() => onSelect(account)} className="mt-4 text-sm font-semibold text-violet-600 hover:underline dark:text-violet-300">Ver cuenta →</button>}</motion.article>; }

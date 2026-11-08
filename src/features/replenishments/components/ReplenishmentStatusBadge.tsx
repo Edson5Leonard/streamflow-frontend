@@ -1,0 +1,3 @@
+import type { ReplenishmentStatus } from '../types/replenishments.types';
+const labels: Record<ReplenishmentStatus, string> = { SOLICITADA: 'Esperando pago', PAGO_PENDIENTE: 'Pago por validar', PAGO_APROBADO: 'Pendiente de stock', ATENDIDA: 'Atendida', RECHAZADA: 'Rechazada' };
+export function ReplenishmentStatusBadge({ status }: { status: ReplenishmentStatus }) { const color = status === 'ATENDIDA' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : status === 'RECHAZADA' ? 'bg-red-500/10 text-red-700 dark:text-red-300' : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'; return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${color}`}>{labels[status]}</span>; }

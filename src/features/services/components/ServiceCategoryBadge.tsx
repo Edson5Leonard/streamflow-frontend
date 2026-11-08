@@ -1,0 +1,1 @@
+export function ServiceCategoryBadge({ category }: { category: string }) { return <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{category}</span>; }
