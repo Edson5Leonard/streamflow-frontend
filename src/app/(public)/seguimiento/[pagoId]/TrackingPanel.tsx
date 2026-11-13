@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePublicTracking } from '@/features/payments/hooks/usePublicTracking';
 import { PaymentStatusBadge } from '@/features/payments/components/PaymentStatusBadge';
-import { SaleDetail } from '@/features/sales/components/SaleDetail';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { trackingHref, type OrderLink } from '../../components/tracking-links';
@@ -31,13 +30,16 @@ export function TrackingPanel({ id, token, orders }: { id: string; token: string
         <PaymentStatusBadge status={payment.estado}/>
         <p>{payment.estado === 'PENDIENTE' ? 'El distribuidor está revisando tu comprobante.' :
           payment.estado === 'RECHAZADO' ? payment.motivoRechazo || 'El distribuidor rechazó el pago.' :
-          payment.compra ? 'Tu cuenta está disponible.' : 'Pago aprobado. La entrega está pendiente.'}</p>
+          payment.estadoPedido === 'ENTREGADO' ? 'La entrega fue confirmada. Revisa el WhatsApp que registraste.' :
+          payment.estadoPedido === 'ENTREGA_PENDIENTE' ? 'Pago aprobado. El distribuidor está preparando tu entrega por WhatsApp.' :
+          'Pago aprobado. La entrega está pendiente.'}</p>
         <button disabled={query.isFetching} onClick={() => void query.refetch()} className="text-sm font-semibold text-violet-600 dark:text-violet-300">Actualizar estado</button>
       </div>
-      {payment.estado === 'APROBADO' && payment.compra && <>
-        <SaleDetail purchase={payment.compra}/>
-        {payment.garantiaUsada ? <p>La garantía de esta compra ya fue utilizada.</p> : <PublicClaimForm pagoId={id} token={token}/>}
-      </>}
+      {payment.estado === 'APROBADO' && (
+        payment.garantiaUsada
+          ? <p>La garantía de esta compra ya fue utilizada.</p>
+          : <PublicClaimForm pagoId={id} token={token}/>
+      )}
     </>}
   </section>;
 }

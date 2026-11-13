@@ -40,8 +40,10 @@
 .sf-end-link:is(:hover,:focus-visible) { color: #ffdcc6; }
 .sf-end-link:is(:hover,:focus-visible) svg { opacity: 1; }
 .sf-end-signature { position: relative; isolation: isolate; overflow: hidden; margin-top: 2.2rem; padding-block: .75rem; border-block: 1px solid #ffffff20; }
-.sf-end-signature span { display: block; font-size: clamp(3rem,8vw,7rem); line-height: 1; letter-spacing: -.075em; font-weight: 800; color: #d9cde5; }
-.sf-end-signature i { font-family: Georgia, serif; font-weight: 400; color: #e9bcac; }
+.sf-end-wordmark {
+  display: block; width: min(52rem,100%); height: clamp(5rem,12vw,11rem);
+  background: url('/logo/logo_1.png') center / 100% auto no-repeat;
+}
 .sf-end-grooves { position: absolute; z-index: -1; inset: -80% -4% -110% 48%; border-radius: 50%; background: repeating-radial-gradient(ellipse,transparent 0 7px,#c6a6ee32 8px,transparent 10px); transform: rotate(-13deg); }
 .sf-end-base { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding-block: 1rem; color: #c7bed1; }
 .sf-back-top { display: inline-flex; align-items: center; gap: .5rem; padding: .5rem; font-size: .8rem; }

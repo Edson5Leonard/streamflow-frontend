@@ -20,7 +20,7 @@ export function LandingHero() {
           <div className="sf-landing-horizon" />
           <div className="sf-landing-sun" />
           <div className="sf-landing-ridges" />
-          <span>Stream<br /><i>flow.</i></span>
+          <span>Servinet</span>
         </div>
       </SlideIn>
     </section>

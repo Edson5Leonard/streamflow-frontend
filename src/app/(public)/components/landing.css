@@ -45,8 +45,7 @@
 .sf-landing-horizon { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 4px, #f9deca22 5px); }
 .sf-landing-sun { position: absolute; width: 28%; aspect-ratio: 1; top: 20%; right: 12%; border-radius: 50%; background: #ffdfa9; box-shadow: 0 0 30px #ffbe9066; }
 .sf-landing-ridges { position: absolute; inset: 42% -10% -8%; background: linear-gradient(155deg, #995c95 18%, #463c84 45%, #171735 80%); clip-path: polygon(0 35%,20% 12%,39% 49%,58% 28%,72% 45%,86% 19%,100% 37%,100% 100%,0 100%); }
-.sf-landing-sleeve span { position: absolute; bottom: 9%; left: 9%; font-size: clamp(2rem, 4.2vw, 4rem); line-height: .82; letter-spacing: -.085em; font-weight: 800; }
-.sf-landing-sleeve i { font-family: Georgia, serif; font-weight: 400; color: #ffd9ba; }
+.sf-landing-sleeve span { position: absolute; bottom: 9%; left: 9%; font-size: clamp(1.7rem, 3.5vw, 3.3rem); line-height: .9; letter-spacing: -.085em; font-weight: 800; }
 @media (min-width: 768px) { .sf-landing-hero { grid-template-columns: 1fr .95fr; gap: 1rem; } }
 @media (max-width: 767px) { .sf-landing-art { margin-top: 2rem; width: min(85%, 310px); } }
 @media (prefers-reduced-motion: no-preference) {

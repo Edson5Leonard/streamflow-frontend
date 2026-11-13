@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie';
 
-export const SESSION_COOKIE_KEYS = ['token', 'role', 'distribuidorId', 'usuarioId'] as const;
+export const SESSION_COOKIE_KEYS = ['token', 'role', 'tipoCuenta', 'distribuidorId', 'usuarioId'] as const;
 
 export const cookieService = {
   get: (key: string) => Cookies.get(key),

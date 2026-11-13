@@ -14,6 +14,7 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { SlideIn } from '@/components/animation/SlideIn';
 import { CART_LIMIT, emptyDraft, useCartItems, useCartStore } from '@/stores/cart.store';
 import { formatCurrency } from '@/utils/format-currency';
+import { env } from '@/config/env';
 import { trackingHref } from '../../../components/tracking-links';
 import { useConfirmation } from '../../../components/PurchaseConfirmation';
 import { CartServiceLine } from './CartServiceLine';
@@ -46,10 +47,12 @@ export function CheckoutContents({ distributorId, catalog, singleId, modal = fal
   const storeUrl = getStoreHref(distributorId);
   const products = catalog.productos;
   const selected = products.filter(product => quantities[product.servicioId] > 0);
+  const paymentMethods = catalog.metodosPago.filter(method => method.activo);
   const missing = Object.keys(quantities).filter(id => !products.some(product => product.servicioId === id));
   const count = Object.values(quantities).reduce((sum, n) => sum + n, 0);
   const total = selected.reduce((sum, product) => sum + product.precio * quantities[product.servicioId], 0);
-  const invalid = missing.length > 0 || selected.some(product => quantities[product.servicioId] > product.stockDisponible);
+  const invalid = missing.length > 0 || selected.some(product => quantities[product.servicioId] > product.stockDisponible)
+    || !env.useMocks && paymentMethods.length === 0;
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current || receipt) return;
@@ -57,6 +60,7 @@ export function CheckoutContents({ distributorId, catalog, singleId, modal = fal
     const phone = draft.phone.replace(/\D/g, '');
     const code = draft.code.trim();
     if (!count || count > CART_LIMIT || invalid) return setError('Revisa el stock y las cantidades de tu pedido.');
+    if (!env.useMocks && !paymentMethods.some(method => method.metodo === draft.method)) return setError('Selecciona un método de pago configurado por la tienda.');
     if (phone.length < 8 || phone.length > 15) return setError('El WhatsApp debe tener entre 8 y 15 dígitos.');
     if (draft.method !== 'INTERNACIONAL' && !code) return setError('Ingresa el código de operación.');
     if (!draft.file?.size || draft.file.size > 5 * 1024 * 1024) return setError('Adjunta un comprobante de hasta 5 MB.');
@@ -124,7 +128,8 @@ export function CheckoutContents({ distributorId, catalog, singleId, modal = fal
               onChange={e => editDraft(draftKey, { name: e.target.value })} /></label>
             <label>WhatsApp<input required type="tel" autoComplete="tel" value={draft.phone}
               onChange={e => editDraft(draftKey, { phone: e.target.value })} /></label>
-            <PaymentInstructions metodo={draft.method} onMetodoChange={method => editDraft(draftKey, { method })} />
+            <p className="text-xs leading-5 text-muted-foreground">Usaremos tu nombre y WhatsApp para gestionar este pedido y coordinar la entrega. El distribuidor de esta tienda podrá ver estos datos.</p>
+            <PaymentInstructions metodo={draft.method} onMetodoChange={method => editDraft(draftKey, { method })} metodosTienda={catalog.metodosPago} />
             <label>Código de operación {draft.method === 'INTERNACIONAL' && '(opcional)'}
               <input required={draft.method !== 'INTERNACIONAL'} maxLength={100} value={draft.code}
                 onChange={e => editDraft(draftKey, { code: e.target.value })} /></label>

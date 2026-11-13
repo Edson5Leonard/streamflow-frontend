@@ -17,6 +17,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   { label: 'Configuración', href: '/admin/configuracion', icon: Store, roles: ['DISTRIBUIDOR'] },
   { label: 'Resumen', href: '/superadmin', icon: LayoutDashboard, roles: ['SUPER_ADMIN'] },
   { label: 'Distribuidores', href: '/superadmin/distribuidores', icon: Store, roles: ['SUPER_ADMIN'] },
+  { label: 'Tiendas', href: '/superadmin/tiendas', icon: Store, roles: ['SUPER_ADMIN'] },
   { label: 'Stock global', href: '/superadmin/stock-global', icon: Package, roles: ['SUPER_ADMIN'] },
   { label: 'Pagos de membresía', href: '/superadmin/pagos-suscripcion', icon: CreditCard, roles: ['SUPER_ADMIN'] },
   { label: 'Auditoría', href: '/superadmin/auditoria', icon: ShieldCheck, roles: ['SUPER_ADMIN'] },

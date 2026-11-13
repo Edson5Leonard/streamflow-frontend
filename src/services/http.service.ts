@@ -13,13 +13,27 @@ function headers(options: RequestInit = {}) {
 }
 
 export async function http<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${env.apiUrl}${endpoint}`, { ...options, headers: headers(options) });
+  const response = await fetch(`${env.apiUrl}${endpoint}`, {
+    ...options,
+    cache: 'no-store',
+    headers: headers(options),
+  });
   const raw = response.status === 204 ? '' : await response.text();
-  const body: unknown = raw ? JSON.parse(raw) : null;
+  let body: unknown = null;
+  if (raw) {
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      body = raw;
+    }
+  }
 
   if (!response.ok) {
-    const error = body as { error?: string; message?: string } | null;
-    throw new Error(error?.error ?? error?.message ?? `Error HTTP ${response.status}`);
+    const error = body as { error?: string; message?: string } | string | null;
+    const message = typeof error === 'string'
+      ? `Error HTTP ${response.status}`
+      : error?.error ?? error?.message ?? `Error HTTP ${response.status}`;
+    throw new Error(message);
   }
   return body as T;
 }

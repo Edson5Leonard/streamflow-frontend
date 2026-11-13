@@ -38,7 +38,6 @@
 .sf-auth-art[data-view=register] .sf-auth-cover { background: repeating-linear-gradient(125deg,transparent 0 12px,#ffffff18 13px 15px),linear-gradient(150deg,#eba486,#9b6183,#4a324b); }
 .sf-auth-art[data-view=recovery] .sf-auth-cover { background: repeating-radial-gradient(ellipse at 105% 100%,transparent 0 12px,#d6b8ea55 13px 15px),linear-gradient(145deg,#9185bd,#38344c); }
 .sf-auth-cover span { position: absolute; left: 9%; bottom: 11%; font-size: clamp(1.5rem,3.5vw,3rem); line-height: .85; font-weight: 800; letter-spacing: -.08em; }
-.sf-auth-cover i { display: block; font-family: Georgia, serif; color: #ffdec8; }
 .sf-auth-panel { display: grid; align-items: center; padding: clamp(1.4rem,4vw,3rem); }
 .sf-auth-panel-inner { width: min(100%,25rem); margin: auto; }
 .sf-auth-panel h1 { font-size: clamp(2rem,3vw,3rem); line-height: 1.06; font-weight: 800; letter-spacing: -.06em; }

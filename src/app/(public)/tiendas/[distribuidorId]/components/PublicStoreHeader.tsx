@@ -1,22 +1,26 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, ArrowUpRight, MessageCircle } from 'lucide-react';
 import { SlideIn } from '@/components/animation/SlideIn';
 import { authUrl } from '@/features/auth/constants/auth.routes';
 import type { StoreCatalog } from '@/features/stores/types/stores.types';
+import { getStoreImageSrc } from '@/features/stores/utils/stores.utils';
 
 export function PublicStoreHeader({ catalog, id }: { catalog: StoreCatalog; id: string }) {
   const phone = catalog.whatsapp?.replace(/\D/g, '');
   const available = catalog.productos.filter(product => product.stockDisponible > 0).length;
+  const logo = getStoreImageSrc(catalog.logoUrl);
   return (
     <header className="sf-shop-hero">
       <SlideIn className="sf-shop-intro">
         <Link href="/#tiendas" className="sf-shop-back"><ArrowLeft size={15} /> Todas las tiendas</Link>
-        <h1>{catalog.nombreTienda}</h1>
-        <p>Consulta el catálogo y arma tu pedido con los servicios de esta tienda.</p>
+        <div className="sf-shop-brand">{logo && <Image unoptimized src={logo} alt="" width={96} height={96} className="sf-shop-logo" />}<h1>{catalog.nombreTienda}</h1></div>
+        <p>{catalog.descripcion || 'Consulta el catálogo y arma tu pedido con los servicios de esta tienda.'}</p>
         <div className="sf-shop-actions">
           <a href="#catalogo" className="sf-shop-primary">Ver catálogo <ArrowUpRight size={16} /></a>
           <Link href={authUrl('/registro', id)}>Registrarme</Link>
           <Link href={authUrl('/login', id)}>Ingresar a mi cuenta</Link>
+          <Link href={`/cliente/login?tienda=${encodeURIComponent(id)}`}>Portal de cliente</Link>
           {phone && <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /> WhatsApp</a>}
         </div>
       </SlideIn>

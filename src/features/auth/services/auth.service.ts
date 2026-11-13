@@ -20,11 +20,11 @@ export const authService = {
       const response = await authApi.login(input);
       const role = response.role?.replace(/^ROLE_/, '');
       if (!response.token || !response.usuarioId || !['COMPRADOR', 'DISTRIBUIDOR', 'SUPER_ADMIN'].includes(role)) throw new Error('El servidor devolvió una sesión incompleta.');
-      return { ...response, role: role as Session['role'] };
+      return { ...response, role: role as Session['role'], tipoCuenta: 'USUARIO' };
     }
     const user = allMockUsers().find((item) => item.correo.toLowerCase() === input.correo.trim().toLowerCase() && item.password === input.password && item.activo !== false);
     if (!user) throw new Error('Correo o contraseña incorrectos.');
-    return { token: `mock-${user.id}`, usuarioId: user.id, role: user.role, distribuidorId: user.distribuidorId || null };
+    return { token: `mock-${user.id}`, usuarioId: user.id, role: user.role, tipoCuenta: 'USUARIO', distribuidorId: user.distribuidorId || null };
   },
   async register(input: RegisterInput) {
     if (!env.useMocks) return authApi.register(input);

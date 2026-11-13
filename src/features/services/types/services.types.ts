@@ -1,3 +1,32 @@
-export type Service = { id: string; nombre: string; categoria: string; descripcion: string | null; precioMayorista: number; precioReposicion: number | null; activo: boolean };
-export type CreateServiceInput = { nombre: string; categoria: string; descripcion?: string | null; precioMayorista: number; precioReposicion?: number | null; activo: boolean };
+export type Service = {
+  id: string;
+  nombre: string;
+  categoria: string;
+  descripcion: string | null;
+  precioMayorista: number;
+  precioReposicion: number | null;
+  claveCatalogo: string | null;
+  plataforma: string | null;
+  tipoPlan: 'COMPLETA' | 'PERFIL' | null;
+  cantidadDispositivos: number | null;
+  cantidadPerfiles: number | null;
+  duracionMeses: number | null;
+  precioMinimoVenta: number | null;
+  activo: boolean;
+};
+export type CreateServiceInput = {
+  nombre: string;
+  categoria: string;
+  descripcion?: string | null;
+  precioMayorista: number;
+  precioReposicion?: number | null;
+  plataforma?: string | null;
+  tipoPlan?: 'COMPLETA' | 'PERFIL' | null;
+  cantidadDispositivos?: number | null;
+  cantidadPerfiles?: number | null;
+  duracionMeses?: number | null;
+  precioMinimoVenta?: number | null;
+  activo: boolean;
+};
 export type UpdateServicePriceInput = { id: string; precioReposicion: number };
+export type UpdateServiceMinimumPriceInput = { id: string; precioMinimoVenta: number | null };

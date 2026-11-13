@@ -6,4 +6,4 @@ export type PaymentRequest = { servicioId: string; metodoPago: PaymentMethod; co
 export type PublicPaymentRequest = PaymentRequest & { distribuidorId: string; nombreCompleto: string; whatsapp: string };
 export type CartPaymentRequest = Omit<PublicPaymentRequest, 'servicioId'> & { servicioIds: string[] };
 export type PaymentSubmission = { id: string; estado: PaymentStatus; monto: number; tokenPublico: string };
-export type PaymentTracking = { id: string; estado: PaymentStatus; motivoRechazo: string | null; garantiaUsada: boolean; compra: { id: string; cuentaStockId: string; servicio: string; correo: string; password: string; perfilPin: string | null; precioPagado: number; fechaVenta: string } | null };
+export type PaymentTracking = { id: string; estado: PaymentStatus; motivoRechazo: string | null; garantiaUsada: boolean; reclamoPendiente: boolean; estadoPedido: string | null; compra: null };

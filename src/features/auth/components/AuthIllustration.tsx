@@ -16,7 +16,7 @@ export function AuthIllustration({ view = 'login' }: { view?: AuthView }) {
       </SlideIn>
       <div className="sf-auth-pressing">
         <div className="sf-auth-disc" />
-        <div className="sf-auth-cover"><span>stream<i>flow.</i></span></div>
+        <div className="sf-auth-cover"><span>Servinet</span></div>
       </div>
     </aside>
   );

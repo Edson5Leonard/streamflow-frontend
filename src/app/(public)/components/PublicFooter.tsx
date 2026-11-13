@@ -30,11 +30,11 @@ export function PublicFooter() {
           ))}
         </div>
         <div className="sf-end-signature" aria-hidden="true">
-          <span>stream<i>flow.</i></span>
+          <span className="sf-end-wordmark" />
           <div className="sf-end-grooves" />
         </div>
         <div className="sf-end-base">
-          <small>© StreamFlow</small>
+          <small>© Servinet</small>
           <a href="#public-top" className="sf-back-top">Volver arriba <ArrowUp size={15} /></a>
         </div>
       </div>

@@ -7,7 +7,10 @@
 }
 .sf-shop-back,.sf-shop-actions a { display: inline-flex; align-items: center; gap: .5rem; font-weight: 650; }
 .sf-shop-back { color: #ebd9e8; font-size: .82rem; }
+.sf-shop-brand { display:flex; align-items:center; gap:1rem; }
+.sf-shop-logo { width:clamp(3.5rem,8vw,6rem); height:clamp(3.5rem,8vw,6rem); flex:none; border-radius:1rem; background:#fff; object-fit:contain; padding:.35rem; }
 .sf-shop-intro h1 { margin: 1.4rem 0 .8rem; font-size: clamp(2.3rem,5vw,4.7rem); line-height: 1; letter-spacing: -.065em; font-weight: 800; overflow-wrap: anywhere; }
+.sf-shop-brand h1 { margin:1.4rem 0 .8rem; }
 .sf-shop-intro p { color: #ddd0df; line-height: 1.65; max-width: 28rem; }
 .sf-shop-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem 1rem; margin-top: 1.5rem; font-size: .85rem; }
 .sf-shop-actions a:hover,.sf-shop-back:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -21,11 +24,14 @@
 .sf-product-sleeve--film { background: linear-gradient(120deg,#292038,#79618f); }
 .sf-product-sleeve--music { background: linear-gradient(120deg,#3b213b,#b36e79); }
 .sf-product-sleeve--anime { background: linear-gradient(120deg,#172840,#6567a7); }
+.sf-product-sleeve-image { position:absolute; inset:0; z-index:0; width:100%; height:100%; object-fit:cover; }
 .sf-sleeve-lines { position: absolute; inset: -55% -20% -60% 25%; z-index: -1; border-radius: 50%; transform: rotate(-18deg); background: repeating-radial-gradient(ellipse,transparent 0 8px,#f7e5f84d 9px,transparent 10px); }
 .sf-sleeve-category { font-size: .78rem; font-weight: 650; }
 .sf-shop-card-body { display: flex; flex: 1; flex-direction: column; padding: 1.1rem; }
 .sf-shop-card-body h3 { font-size: 1.12rem; font-weight: 750; }
 .sf-shop-card-body p { margin: .4rem 0 .8rem; font-size: .84rem; color: var(--muted-foreground); }
+.sf-shop-card-body p.sf-shop-plan-details { margin: 0 0 .65rem; font-size: .74rem; font-weight: 650; color: #7041a0; }
+.dark .sf-shop-card-body p.sf-shop-plan-details { color: #c4a4ef; }
 .sf-shop-price { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-top: auto; padding-top: .5rem; }
 .sf-shop-price strong { font-size: 1.3rem; }
 .sf-shop-price span { font-size: .75rem; color: var(--muted-foreground); }

@@ -1,6 +1,7 @@
 import Cookies from 'js-cookie';
+import { env } from '@/config/env';
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api').replace(/\/$/, '');
+const API_BASE_URL = env.apiUrl;
 
 function createHeaders(options: RequestInit = {}): Headers {
   const headers = new Headers(options.headers);
@@ -31,6 +32,7 @@ async function getErrorMessage(response: Response): Promise<string> {
 export async function fetchApi<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
+    cache: 'no-store',
     headers: createHeaders(options),
   });
 
@@ -56,7 +58,7 @@ export async function fetchApi<T = unknown>(endpoint: string, options: RequestIn
 }
 
 export async function fetchApiBlob(endpoint: string): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers: createHeaders() });
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store', headers: createHeaders() });
   if (!response.ok) {
     throw new Error(await getErrorMessage(response));
   }
