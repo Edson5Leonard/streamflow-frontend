@@ -9,8 +9,15 @@ import { BuyerDashboardHeader } from './componentes/BuyerDashboardHeader';
 import { BuyerStats } from './componentes/BuyerStats';
 import { BuyerQuickActions } from './componentes/BuyerQuickActions';
 import { RecentPurchases } from './componentes/RecentPurchases';
+import { ClientPortal } from '@/app/cliente/portal/ClientPortal';
 
 export default function BuyerDashboard() {
+  const profile = useProfile();
+  if (profile.data?.pinDebeCambiar !== undefined) return <ClientPortal embedded />;
+  return <RegisteredBuyerDashboard />;
+}
+
+function RegisteredBuyerDashboard() {
   const profile = useProfile();
   const purchases = useMyPurchases();
   const orders = useMyOrders();

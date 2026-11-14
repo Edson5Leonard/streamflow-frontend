@@ -23,7 +23,7 @@ export default function BuyerProfile() {
         <SlideIn className="sf-buyer-panel">
           <div className="sf-buyer-identity"><span>{getInitials(user.nombreCompleto)}</span><div><h2>{user.nombreCompleto}</h2><small>Comprador</small></div></div>
           <dl>
-            <div className="sf-buyer-row"><Mail size={18} /><div><dt>Correo</dt><dd>{user.correo}</dd></div></div>
+            <div className="sf-buyer-row"><Mail size={18} /><div><dt>Correo</dt><dd>{user.correo || 'No registrado'}</dd></div></div>
             <div className="sf-buyer-row"><Phone size={18} /><div><dt>WhatsApp</dt><dd>{user.whatsapp || 'No registrado'}</dd></div></div>
           </dl>
         </SlideIn>

@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { saveSession } from '@/lib/auth';
 import { clientPortalApi } from '@/features/client-portal/api';
 
 export function ClientLoginForm({ initialDistributorId = '' }: { initialDistributorId?: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [distribuidorId, setDistribuidorId] = useState(initialDistributorId);
   const [whatsapp, setWhatsapp] = useState('');
   const [pin, setPin] = useState('');
@@ -19,8 +21,9 @@ export function ClientLoginForm({ initialDistributorId = '' }: { initialDistribu
     setIsSubmitting(true);
     try {
       const session = await clientPortalApi.login({ distribuidorId: distribuidorId.trim(), whatsapp: whatsapp.trim(), pin });
+      queryClient.clear();
       saveSession({ ...session, role: session.role, tipoCuenta: 'CLIENTE' });
-      router.replace('/cliente/portal');
+      router.replace(session.pinDebeCambiar ? '/cliente/portal' : '/dashboard/catalogo');
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : 'No se pudo iniciar sesión.');
     } finally {

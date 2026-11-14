@@ -1,11 +1,15 @@
 import { cookieService } from '@/lib/cookies';
 
 export const handleLogout = () => {
+  const isClient = cookieService.get('tipoCuenta') === 'CLIENTE';
+  const distributorId = cookieService.get('distribuidorId');
   // Limpiar todas las cookies de autenticación
   cookieService.clearSession();
 
   // Redirigir al login y recargar para limpiar estados en memoria
-  window.location.assign(new URL('/login', window.location.origin).toString());
+  const loginUrl = new URL(isClient ? '/cliente/login' : '/login', window.location.origin);
+  if (isClient && distributorId) loginUrl.searchParams.set('tienda', distributorId);
+  window.location.assign(loginUrl.toString());
 };
 
 export function saveSession(session: {

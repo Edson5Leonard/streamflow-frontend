@@ -6,18 +6,23 @@ import { PaymentInstructions } from '@/components/payments/PaymentInstructions';
 import { useCreatePayment } from '../hooks/useCreatePayment';
 import { paymentSchema, publicPaymentSchema } from '../schemas/payment.schema';
 import type { Payment, PaymentMethod, PaymentSubmission } from '../types/payments.types';
+import type { StorePaymentMethod } from '@/features/stores/types/stores.types';
 import { VoucherUploader } from './VoucherUploader';
 
 export function PaymentForm({
   servicioId,
   distribuidorId,
+  client,
+  metodosTienda,
   onSuccess,
 }: {
   servicioId: string;
   distribuidorId?: string;
+  client?: { distribuidorId: string; nombreCompleto: string; whatsapp: string };
+  metodosTienda?: StorePaymentMethod[];
   onSuccess?: (result: Payment | PaymentSubmission) => void;
 }) {
-  const [method, setMethod] = useState<PaymentMethod>('YAPE');
+  const [method, setMethod] = useState<PaymentMethod>(() => metodosTienda?.find((item) => item.activo)?.metodo ?? 'YAPE');
   const [file, setFile] = useState<File | null>(null);
   const [nombre, setNombre] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -28,13 +33,19 @@ export function PaymentForm({
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    if (metodosTienda && !metodosTienda.some((item) => item.activo && item.metodo === method)) {
+      setError('Selecciona un método de pago disponible en la tienda.');
+      return;
+    }
     if (method !== 'INTERNACIONAL' && !codigo.trim()) {
       setError('Ingresa el código de operación.');
       return;
     }
 
     const input = { servicioId, metodoPago: method, codigoOperacion: codigo, comprobante: file };
-    const parsed = distribuidorId
+    const parsed = client
+      ? publicPaymentSchema.safeParse({ ...input, ...client })
+      : distribuidorId
       ? publicPaymentSchema.safeParse({ ...input, distribuidorId, nombreCompleto: nombre, whatsapp })
       : paymentSchema.safeParse(input);
     if (!parsed.success) {
@@ -72,7 +83,7 @@ export function PaymentForm({
           </p>
         </>
       )}
-      <PaymentInstructions metodo={method} onMetodoChange={setMethod} />
+      <PaymentInstructions metodo={method} onMetodoChange={setMethod} metodosTienda={metodosTienda} />
       <label className="block text-sm font-medium">
         Código de operación {method === 'INTERNACIONAL' && <span className="font-normal text-muted-foreground">(opcional)</span>}
         <input value={codigo} onChange={(event) => setCodigo(event.target.value)} maxLength={100} className={inputClass} />

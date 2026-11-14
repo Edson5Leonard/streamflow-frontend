@@ -20,6 +20,7 @@ export default function BuyerCatalog() {
   const catalog = useStoreCatalog(storeId);
   const [selected, setSelected] = useState<StoreProduct | null>(null);
   const [sent, setSent] = useState(false);
+  const isClient = profile.data?.pinDebeCambiar !== undefined;
   return (
     <div className="sf-buyer-stack">
       <BuyerCover view="catalog" title="Catálogo de servicios" description={catalog.data
@@ -40,7 +41,12 @@ export default function BuyerCatalog() {
           {sent ? <div role="status" className="sf-buyer-notice"><CheckCircle2 size={22} />
             <p>Tu pedido se envió al distribuidor para revisión.</p>
             <Link href="/dashboard/historial#pedidos">Consultar pedidos →</Link>
-          </div> : selected && <PaymentForm servicioId={selected.servicioId} onSuccess={() => setSent(true)} />}
+          </div> : selected && isClient && (!profile.data?.whatsapp || !storeId)
+            ? <p role="alert">No se encontró el WhatsApp o la tienda de tu cuenta. Contacta a tu tienda.</p>
+            : selected && <PaymentForm servicioId={selected.servicioId}
+            client={isClient && profile.data?.whatsapp && storeId ? { distribuidorId: storeId, nombreCompleto: profile.data.nombreCompleto, whatsapp: profile.data.whatsapp } : undefined}
+            metodosTienda={isClient ? catalog.data?.metodosPago : undefined}
+            onSuccess={() => setSent(true)} />}
         </DialogContent>
       </Dialog>
     </div>

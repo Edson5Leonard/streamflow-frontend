@@ -12,9 +12,17 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { SlideIn } from '@/components/animation/SlideIn';
 import { BuyerCover } from '../componentes/BuyerCover';
+import { useProfile } from '@/features/auth/hooks/useProfile';
+import { ClientPortal } from '@/app/cliente/portal/ClientPortal';
 
 const filters = { TODOS: 'Todos', PENDIENTE: 'Pendientes', APROBADO: 'Aprobados', RECHAZADO: 'Rechazados' } as const;
 export default function BuyerHistory() {
+  const profile = useProfile();
+  if (profile.data?.pinDebeCambiar !== undefined) return <ClientPortal embedded />;
+  return <RegisteredBuyerHistory />;
+}
+
+function RegisteredBuyerHistory() {
   const orders = useMyOrders();
   const [status, setStatus] = useState<PaymentStatus | 'TODOS'>('TODOS');
   const visible = (orders.data ?? []).filter(order => status === 'TODOS' || order.estado === status)

@@ -12,8 +12,16 @@ import { LoadingState } from '@/components/feedback/LoadingState';
 import { SlideIn } from '@/components/animation/SlideIn';
 import { formatDate } from '@/utils/format-date';
 import { BuyerCover } from '../componentes/BuyerCover';
+import { useProfile } from '@/features/auth/hooks/useProfile';
+import { ClientPortal } from '@/app/cliente/portal/ClientPortal';
 
 export default function BuyerSupport() {
+  const profile = useProfile();
+  if (profile.data?.pinDebeCambiar !== undefined) return <ClientPortal embedded />;
+  return <RegisteredBuyerSupport />;
+}
+
+function RegisteredBuyerSupport() {
   const purchases = useMyPurchases();
   const [selected, setSelected] = useState('');
   const [result, setResult] = useState<AutoGuaranteeResult | null>(null);

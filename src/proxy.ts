@@ -28,8 +28,7 @@ export function proxy(req: NextRequest) {
   const role = userRole?.replace(/^ROLE_/, '') as UserRole | undefined;
   const requiredRole: UserRole = pathname.startsWith('/superadmin') ? 'SUPER_ADMIN' : pathname.startsWith('/admin') ? 'DISTRIBUIDOR' : 'COMPRADOR';
   if (!role || !Object.hasOwn(ROLE_HOME, role)) return NextResponse.redirect(new URL('/login', req.url));
-  if ((pathname.startsWith('/dashboard') && accountType === 'CLIENTE')
-    || ((pathname.startsWith('/admin') || pathname.startsWith('/superadmin')) && accountType === 'CLIENTE')) {
+  if ((pathname.startsWith('/admin') || pathname.startsWith('/superadmin')) && accountType === 'CLIENTE') {
     return NextResponse.redirect(new URL('/cliente/portal', req.url));
   }
   if (role !== requiredRole) return NextResponse.redirect(new URL(ROLE_HOME[role], req.url));
