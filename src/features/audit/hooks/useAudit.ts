@@ -8,6 +8,7 @@ export function useAudit() {
   const client = useQueryClient();
   const invalidate = async () => { await Promise.all([client.invalidateQueries({ queryKey: AUDIT_QUERY_KEY }), client.invalidateQueries({ queryKey: ['claims'] }), client.invalidateQueries({ queryKey: ['accounts'] })]); };
   const discard = useMutation({ mutationFn: auditService.discard, onSuccess: invalidate });
+  const compensate = useMutation({ mutationFn: auditService.compensate, onSuccess: invalidate });
   const recover = useMutation({ mutationFn: ({ id, password }: { id: string; password: string }) => auditService.recover(id, password), onSuccess: invalidate });
-  return { ...query, discard, recover };
+  return { ...query, discard, compensate, recover };
 }

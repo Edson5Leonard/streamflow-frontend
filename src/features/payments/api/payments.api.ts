@@ -17,4 +17,25 @@ export const paymentsApi = {
   approve: (id: string) => fetchApi<Payment>(`/pagos/${encodeURIComponent(id)}/aprobar`, { method: 'PUT' }),
   reject: (id: string, motivo: string) => fetchApi<Payment>(`/pagos/${encodeURIComponent(id)}/rechazar`, { method: 'PUT', body: JSON.stringify({ motivo }) }),
   getVoucher: (name: string) => fetchApiBlob(`/pagos/comprobantes/${encodeURIComponent(name)}`),
+  listAllAdmin: (params: { estado?: string; distribuidorId?: string; desde?: string; hasta?: string; metodoPago?: string; page?: number; size?: number } = {}) => {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    const q = sp.toString();
+    return fetchApi<{ pagos: unknown[]; total: number; montoTotal: number }>(`/pagos${q ? `?${q}` : ''}`);
+  },
+  cancel: (id: string, motivo?: string) => fetchApi<{ id: string; estado: string; mensaje: string }>(`/pagos/${encodeURIComponent(id)}/cancelar`, {
+    method: 'PATCH',
+    body: JSON.stringify({ motivo: motivo ?? '' }),
+  }),
+  refund: (id: string, input: { monto: number; motivo: string; metodoPago?: string; referencia?: string }) =>
+    fetchApi<{ reembolsoId: string; pagoId: string; monto: number; estado: string; creadoEn: string }>(`/pagos/${encodeURIComponent(id)}/reembolso`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  listMyHistory: (params: { desde?: string; hasta?: string; estado?: string; page?: number; size?: number } = {}) => {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    const q = sp.toString();
+    return fetchApi<{ pedidos: unknown[]; montoTotal: number; total: number }>(`/pagos/mis-pedidos/historial${q ? `?${q}` : ''}`);
+  },
 };

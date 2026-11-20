@@ -57,4 +57,20 @@ export const storesApi = {
     return storeAuditSchema.array().parse(await fetchApi<unknown>(endpoint));
   },
   async listMyAudit() { return storeAuditSchema.array().parse(await fetchApi<unknown>('/tiendas/mi-tienda/auditoria')); },
+  updateStatus: (input: { activa: boolean; mensajeMantenimiento?: string }) =>
+    fetchApi<{ activa: boolean; mensajeMantenimiento: string }>('/tiendas/mi-tienda/estado', { method: 'PATCH', body: JSON.stringify(input) }),
+  updateSeo: (input: { metaTitulo?: string; metaDescripcion?: string; palabrasClave?: string[]; ogImagen?: string }) =>
+    fetchApi<Record<string, unknown>>('/tiendas/mi-tienda/seo', { method: 'PUT', body: JSON.stringify(input) }),
+  getAnalytics: (params: { desde?: string; hasta?: string } = {}) => {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    const q = sp.toString();
+    return fetchApi<Record<string, unknown>>(`/tiendas/mi-tienda/analytics${q ? `?${q}` : ''}`);
+  },
+  updateDomain: (input: { dominio: string; subdominio: string }) =>
+    fetchApi<{ dominio: string; estadoVerificacion: string; instrucciones: string }>('/tiendas/mi-tienda/dominio', { method: 'PUT', body: JSON.stringify(input) }),
+  updateTheme: (input: { colorPrimario?: string; colorSecundario?: string; colorFondo?: string; fuente?: string; modoOscuro?: boolean }) =>
+    fetchApi<Record<string, unknown>>('/tiendas/mi-tienda/tema', { method: 'PUT', body: JSON.stringify(input) }),
+  updateCurrency: (input: { monedaCodigo: string; tasaCambioManual?: number; actualizacionAutomatica?: boolean }) =>
+    fetchApi<{ monedaCodigo: string; tasaCambioManual: number }>('/tiendas/mi-tienda/moneda', { method: 'PUT', body: JSON.stringify(input) }),
 };

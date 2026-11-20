@@ -14,6 +14,23 @@ function tenant() { return Cookies.get('role') === 'DISTRIBUIDOR' ? Cookies.get(
 function visible(items: MockAccount[]) { return Cookies.get('role') === 'SUPER_ADMIN' ? items : items.filter((item) => item.distributorId && item.distributorId === tenant()); }
 export const accountsService = {
   async resolveObservedMock(id: string, action: 'descartar' | 'recuperar', password?: string) { if (!env.useMocks || Cookies.get('role') !== 'SUPER_ADMIN') throw new Error('No tienes permiso para gestionar esta cuenta.'); const items = read(); const index = items.findIndex((item) => item.id === id); if (index < 0 || items[index].estado !== 'OBSERVADO') throw new Error('La cuenta observada no está disponible.'); items[index] = action === 'recuperar' ? { ...items[index], estado: 'DISPONIBLE', tipoStock: 'VENTA', password: password! } : { ...items[index], estado: 'DESCARTADO' }; save(items); },
+  async compensateMock(id: string, distributorId: string, historical: boolean) {
+    if (!env.useMocks || Cookies.get('role') !== 'SUPER_ADMIN') throw new Error('No tienes permiso para gestionar esta cuenta.');
+    const items = read();
+    const affected = items.find((item) => item.id === id);
+    if (!affected || affected.estado !== (historical ? 'DESCARTADO' : 'OBSERVADO') || affected.distributorId !== distributorId) throw new Error('La cuenta reportada no corresponde al reclamo.');
+    if (affected.precioVenta == null || affected.precioVenta <= 0) throw new Error('La cuenta descartada no tiene un precio de venta válido.');
+    const service = (await servicesService.list()).find((item) => item.id === affected.servicioId);
+    if (!service) throw new Error('No se encontró el servicio de la cuenta descartada.');
+    if (service.precioMinimoVenta != null && affected.precioVenta < service.precioMinimoVenta) throw new Error(`El precio de venta debe ser igual o mayor a S/ ${service.precioMinimoVenta.toFixed(2)}.`);
+    const replacement = items.filter((item) => item.distributorId === null && item.servicioId === affected.servicioId && item.estado === 'DISPONIBLE' && item.tipoStock === 'VENTA').sort((a, b) => (a.fechaIngreso ?? '').localeCompare(b.fechaIngreso ?? '') || a.id.localeCompare(b.id))[0];
+    if (!replacement) throw new Error('No hay cuentas disponibles en el stock global para compensar este servicio.');
+    affected.estado = 'DESCARTADO';
+    replacement.distributorId = distributorId;
+    replacement.precioVenta = affected.precioVenta;
+    save(items);
+    return replacement.id;
+  },
   async assignGlobalMock(serviceId: string, distributorId: string, units: number, price: number) { if (!env.useMocks) throw new Error('La asignación se realiza desde la API de reposiciones.'); if (Cookies.get('role') !== 'SUPER_ADMIN') throw new Error('No tienes permiso para asignar cuentas.'); const items = read(); const available = items.filter((item) => item.distributorId === null && item.servicioId === serviceId && item.estado === 'DISPONIBLE').sort((a, b) => (a.fechaIngreso ?? '').localeCompare(b.fechaIngreso ?? '') || a.id.localeCompare(b.id)); if (available.length < units) return false; const selected = new Set(available.slice(0, units).map((item) => item.id)); save(items.map((item) => selected.has(item.id) ? { ...item, distributorId, estado: 'DISPONIBLE', tipoStock: 'VENTA', precioVenta: price } : item)); return true; },
   async list() { return env.useMocks ? visible(read()) : accountsApi.list(); },
   async listGlobal() { return env.useMocks ? read().filter((item) => item.distributorId === null) : accountsApi.listGlobal(); },

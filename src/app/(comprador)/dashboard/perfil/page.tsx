@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, Mail, Phone, Store } from 'lucide-react';
 import { useProfile } from '@/features/auth/hooks/useProfile';
+import { ProfileEditorCard } from '@/features/profile/components/ProfileEditorCard';
 import { getStoreHref } from '@/features/stores/utils/stores.utils';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorState } from '@/components/feedback/ErrorState';
@@ -35,6 +36,12 @@ export default function BuyerProfile() {
           </div>
         </SlideIn>
       </div>
+      <ProfileEditorCard
+        initialName={user.nombreCompleto}
+        initialEmail={user.correo}
+        initialWhatsapp={user.whatsapp || ''}
+        onUpdated={() => void profile.refetch()}
+      />
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { claimsApi } from '@/features/claims/api/claims.api';
 import { useMyPurchases } from '@/features/sales/hooks/useMyPurchases';
 import { ClaimForm } from '@/features/claims/components/ClaimForm';
 import { AutoGuaranteeResultCard } from '@/features/claims/components/AutoGuaranteeResultCard';
@@ -23,6 +25,7 @@ export default function BuyerSupport() {
 
 function RegisteredBuyerSupport() {
   const purchases = useMyPurchases();
+  const myClaims = useQuery({ queryKey: ['my-claims'], queryFn: claimsApi.listMine });
   const [selected, setSelected] = useState('');
   const [result, setResult] = useState<AutoGuaranteeResult | null>(null);
   const purchase = purchases.data?.find(item => item.id === selected);
@@ -44,10 +47,39 @@ function RegisteredBuyerSupport() {
               {purchase && <div className="sf-buyer-purchase-info"><strong>{purchase.servicio}</strong><small>Entregado el {formatDate(purchase.fechaVenta)}</small></div>}
             </section>
             {result ? <div className="space-y-4"><AutoGuaranteeResultCard result={result} /><button onClick={() => { setResult(null); setSelected(''); }}>Elegir otra compra</button></div> :
-              purchase ? <SlideIn key={purchase.id}><ClaimForm ventaId={purchase.id} onSuccess={setResult} /></SlideIn> :
+              purchase ? <SlideIn key={purchase.id}><ClaimForm ventaId={purchase.id} onSuccess={(res) => { setResult(res); void myClaims.refetch(); }} /></SlideIn> :
               <div className="sf-buyer-panel"><h2>Detalles del reclamo</h2><p>Al elegir una compra podrás indicar la categoría del problema, describir lo ocurrido y adjuntar una evidencia.</p></div>}
           </div>
         )}
+
+      <section className="sf-buyer-panel space-y-3">
+        <h2>Mis reclamos</h2>
+        {myClaims.isLoading ? <LoadingState label="Cargando tus reclamos" /> :
+          !myClaims.data?.length ? <p className="text-sm opacity-75">Aún no has enviado reclamos.</p> : (
+            <div className="space-y-3">
+              {myClaims.data.map((claim) => (
+                <div key={claim.id} className="rounded-xl border p-4 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <strong>{claim.servicio ?? 'Reclamo'} · {claim.categoriaFallo}</strong>
+                    <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold border">
+                      {claim.estado}
+                    </span>
+                  </div>
+                  <p className="text-sm opacity-80">{claim.motivo}</p>
+                  <small className="block opacity-60">{formatDate(claim.fechaCreacion)}</small>
+                  {claim.reemplazo && (
+                    <div className="mt-2 rounded-lg border bg-emerald-500/10 p-3 text-sm space-y-1">
+                      <p className="font-semibold text-emerald-400">Cuenta de reemplazo asignada:</p>
+                      <p>Correo: <code>{claim.reemplazo.correo}</code></p>
+                      <p>Contraseña: <code>{claim.reemplazo.password}</code></p>
+                      {claim.reemplazo.perfilPin && <p>Perfil / PIN: <code>{claim.reemplazo.perfilPin}</code></p>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+      </section>
     </div>
   );
 }

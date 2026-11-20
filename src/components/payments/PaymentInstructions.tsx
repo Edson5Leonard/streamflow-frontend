@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { PaymentMethodSelector } from '@/features/payments/components/PaymentMethodSelector';
 import { PaymentInstructions as Destination } from '@/features/payments/components/PaymentInstructions';
 import type { PaymentMethod } from '@/features/payments/types/payments.types';
@@ -38,10 +40,34 @@ export function PaymentInstructions({ metodo, onMetodoChange, mostrarPlin = true
 
 function StorePaymentDetails({ method }: { method: StorePaymentMethod }) {
   const image = getStoreImageSrc(method.imagenQrUrl);
+  const [expanded, setExpanded] = useState(false);
+
   return <section className="min-w-0 space-y-3 rounded-2xl border bg-card p-4">
     <h3 className="font-semibold">{method.metodo === 'INTERNACIONAL' ? 'Pago internacional' : `Pago · ${method.metodo}`}</h3>
     {method.titular && <p className="text-sm text-muted-foreground">Titular: <strong className="text-foreground">{method.titular}</strong></p>}
-    {image && <Image unoptimized src={image} alt={`QR de ${method.metodo}`} width={480} height={480} className="max-h-72 max-w-full rounded-xl bg-white p-2 object-contain" />}
+    {image && (
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className={`cursor-pointer text-left ${expanded ? 'block w-full' : 'inline-block'}`}
+          aria-expanded={expanded}
+        >
+          <Image
+            unoptimized
+            src={image}
+            alt={`QR de ${method.metodo}`}
+            width={640}
+            height={640}
+            className={`rounded-xl bg-white p-2 object-contain transition-all ${expanded ? 'w-full max-w-md max-h-none' : 'max-h-44 w-auto'}`}
+          />
+          <span className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+            {expanded ? <ZoomOut size={14} /> : <ZoomIn size={14} />}
+            {expanded ? 'Reducir QR' : 'Ampliar QR'}
+          </span>
+        </button>
+      </div>
+    )}
     {method.numeroCuenta && <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-background p-3">
       <div><p className="text-xs text-muted-foreground">Número de cuenta / teléfono</p><p className="break-all font-mono text-sm font-semibold">{method.numeroCuenta}</p></div><CopyButton label="Copiar número" value={method.numeroCuenta} />
     </div>}

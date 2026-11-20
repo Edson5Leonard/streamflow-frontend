@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Mail, Phone, ShieldCheck } from 'lucide-react';
 import { useProfile } from '@/features/auth/hooks/useProfile';
+import { ProfileEditorCard } from '@/features/profile/components/ProfileEditorCard';
 import { getInitials } from '@/utils/get-initials';
 import { SlideIn } from '@/components/animation/SlideIn';
 import { LoadingState } from '@/components/feedback/LoadingState';
@@ -28,6 +30,12 @@ export default function SuperAdminProfile() {
           <div><ShieldCheck size={18} /><dt>Rol</dt><dd>{user.role.replace(/^ROLE_/, '') === 'SUPER_ADMIN' ? 'Superadministrador' : user.role}</dd></div>
         </dl>
       </SlideIn>
+      <ProfileEditorCard
+        initialName={user.nombreCompleto}
+        initialEmail={user.correo}
+        initialWhatsapp={user.whatsapp || ''}
+        onUpdated={() => void profile.refetch()}
+      />
     </div>
   );
 }
