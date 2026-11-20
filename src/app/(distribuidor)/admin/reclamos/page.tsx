@@ -11,4 +11,67 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { DistributorCover } from '../componentes/DistributorCover';
 import { FadeIn } from '@/components/animation/FadeIn';
-export default function ClaimsPage() { const claims = usePendingClaims(); const update = useUpdateClaimStatus(); const [category, setCategory] = useState(''); const [selected, setSelected] = useState<Claim | null>(null); const [replacement, setReplacement] = useState<Claim | null>(null); const [action, setAction] = useState<'RESUELTO' | 'RECHAZADO' | null>(null); const [message, setMessage] = useState(''); if (claims.isLoading) return <LoadingState />; if (claims.error) return <ErrorState description={claims.error.message} onRetry={() => void claims.refetch()} />; async function submit() { if (!selected || !action) return; try { await update.mutateAsync({ id: selected.id, estado: action }); setSelected(null); setMessage('Reclamo actualizado.'); } catch {} } return <FadeIn className="space-y-6"><DistributorCover title="Reclamos" description="Consulta las evidencias de tus clientes y elige cómo atender cada caso." value={claims.data?.length ?? 0} label="casos pendientes" />{message && <p role="status" className="text-sm text-emerald-600">{message}</p>}<section className="sf-dist-panel"><div className="sf-dist-heading"><h2>Casos por atender</h2><select aria-label="Categoría del reclamo" value={category} onChange={e => setCategory(e.target.value)}><option value="">Todas las categorías</option>{Array.from(new Set(claims.data?.map(item => item.categoriaFallo))).map(value => <option key={value} value={value}>{value.replaceAll('_',' ')}</option>)}</select></div><ClaimTable claims={(claims.data ?? []).filter(item => !category || item.categoriaFallo === category)} onSelect={(claim) => { setSelected(claim); setAction(null); update.reset(); }} /></section><Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg"><DialogTitle>Detalle del reclamo</DialogTitle><DialogDescription>Venta {selected?.ventaId}</DialogDescription>{selected && <><p className="text-sm font-medium">{selected.categoriaFallo.replaceAll('_', ' ')}</p><p className="text-sm text-muted-foreground">{selected.motivo}</p>{(selected.servicio || selected.correoAfectado) && <div className="rounded-xl border bg-muted/50 p-3 text-sm space-y-1"><p className="font-semibold">Cuenta reportada{selected.servicio ? ` · ${selected.servicio}` : ''}</p>{selected.correoAfectado && <p>Correo: <code>{selected.correoAfectado}</code></p>}{selected.passwordAfectado && <p>Contraseña: <code>{selected.passwordAfectado}</code></p>}{selected.perfilPinAfectado && <p>Perfil / PIN: <code>{selected.perfilPinAfectado}</code></p>}</div>}<ClaimEvidenceViewer url={selected.comprobanteFalloUrl} /><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setAction('RESUELTO')} className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white">Marcar resuelto</button><button type="button" onClick={() => setAction('RECHAZADO')} className="rounded-xl border px-3 py-2 text-sm">Rechazar</button><button type="button" onClick={() => { setReplacement(selected); setSelected(null); }} className="rounded-xl border px-3 py-2 text-sm">Reemplazo express</button></div>{action && <div className="rounded-xl bg-muted p-3"><p className="mb-2 text-sm">¿Confirmas que deseas marcar este reclamo como {action === 'RESUELTO' ? 'resuelto' : 'rechazado'}?</p><button type="button" disabled={update.isPending} onClick={() => void submit()} className="rounded-lg bg-violet-600 px-3 py-2 text-sm text-white">Confirmar</button></div>}{update.error && <p role="alert" className="text-sm text-red-500">{update.error.message}</p>}</>}</DialogContent></Dialog>{replacement && <ReplacementAccountModal claim={replacement} open onOpenChange={(open) => { if (!open) setReplacement(null); }} />}</FadeIn>; }
+export default function ClaimsPage() {
+  const claims = usePendingClaims();
+  const update = useUpdateClaimStatus();
+  const [category, setCategory] = useState('');
+  const [selected, setSelected] = useState<Claim | null>(null);
+  const [replacement, setReplacement] = useState<Claim | null>(null);
+  const [action, setAction] = useState<'RESUELTO' | 'RECHAZADO' | null>(null);
+  const [message, setMessage] = useState('');
+  if (claims.isLoading) return <LoadingState />;
+  if (claims.error) return <ErrorState description={claims.error.message} onRetry={() => void claims.refetch()} />;
+  async function submit() {
+    if (!selected || !action || selected.problemaAuditoria) return;
+    try {
+      await update.mutateAsync({ id: selected.id, estado: action });
+      setSelected(null);
+      setMessage('Reclamo actualizado.');
+    } catch { /* mutation exposes error */ }
+  }
+  return <FadeIn className="space-y-6">
+    <DistributorCover title="Reclamos" description="Consulta las evidencias de tus clientes y elige cómo atender cada caso." value={claims.data?.length ?? 0} label="casos pendientes" />
+    {message && <p role="status" className="text-sm text-emerald-600">{message}</p>}
+    <section className="sf-dist-panel">
+      <div className="sf-dist-heading"><h2>Casos por atender</h2>
+        <select aria-label="Categoría del reclamo" value={category} onChange={e => setCategory(e.target.value)}>
+          <option value="">Todas las categorías</option>
+          {Array.from(new Set(claims.data?.map(item => item.categoriaFallo))).map(value => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
+        </select>
+      </div>
+      <ClaimTable claims={(claims.data ?? []).filter(item => !category || item.categoriaFallo === category)} onSelect={(claim) => { setSelected(claim); setAction(null); update.reset(); }} />
+    </section>
+    <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogTitle>Detalle del reclamo</DialogTitle>
+        <DialogDescription>Venta {selected?.ventaId}</DialogDescription>
+        {selected && <>
+          <p className="text-sm font-medium">{selected.categoriaFallo.replaceAll('_', ' ')}</p>
+          <p className="text-sm text-muted-foreground">{selected.motivo}</p>
+          {(selected.servicio || selected.correoAfectado) && <div className="rounded-xl border bg-muted/50 p-3 text-sm space-y-1">
+            <p className="font-semibold">Cuenta reportada{selected.servicio ? ` · ${selected.servicio}` : ''}</p>
+            {selected.correoAfectado && <p>Correo: <code>{selected.correoAfectado}</code></p>}
+            {selected.passwordAfectado && <p>Contraseña: <code>{selected.passwordAfectado}</code></p>}
+            {selected.perfilPinAfectado && <p>Perfil / PIN: <code>{selected.perfilPinAfectado}</code></p>}
+          </div>}
+          <ClaimEvidenceViewer url={selected.comprobanteFalloUrl} />
+          {selected.problemaAuditoria
+            ? <p role="alert" className="text-sm text-amber-600">{selected.problemaAuditoria} Contacta al administrador para revisar el caso.</p>
+            : <>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setAction('RESUELTO')} className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white">Marcar resuelto</button>
+                <button type="button" onClick={() => setAction('RECHAZADO')} className="rounded-xl border px-3 py-2 text-sm">Rechazar</button>
+                <button type="button" onClick={() => { setReplacement(selected); setSelected(null); }} className="rounded-xl border px-3 py-2 text-sm">Reemplazo express</button>
+              </div>
+              {action && <div className="rounded-xl bg-muted p-3">
+                <p className="mb-2 text-sm">¿Confirmas que deseas marcar este reclamo como {action === 'RESUELTO' ? 'resuelto' : 'rechazado'}?</p>
+                <button type="button" disabled={update.isPending} onClick={() => void submit()} className="rounded-lg bg-violet-600 px-3 py-2 text-sm text-white">Confirmar</button>
+              </div>}
+            </>}
+          {update.error && <p role="alert" className="text-sm text-red-500">{update.error.message}</p>}
+        </>}
+      </DialogContent>
+    </Dialog>
+    {replacement && <ReplacementAccountModal claim={replacement} open onOpenChange={(open) => { if (!open) setReplacement(null); }} />}
+  </FadeIn>;
+}
